@@ -25,11 +25,16 @@
       </label>
       <label>
         Scale
+        <select id="scale-family"></select>
+      </label>
+      <label>
+        Mode
         <select id="scale"></select>
       </label>
       <label>
         Display
         <select id="display">
+          <option value="none">None</option>
           <option value="letters">Letter Names</option>
           <option value="intervals">Intervals</option>
         </select>
@@ -37,6 +42,16 @@
     </div>
     <div class="controls-row controls-tunings" id="tuning-controls">
       <!-- JS builds: per-string selects + add/remove buttons -->
+    </div>
+    <div class="controls-row controls-quiz" id="quiz-controls">
+      <div class="quiz-mode-picker" id="quiz-mode-picker">
+        <button type="button" id="quiz-mode-btn">Modes (9 selected)</button>
+        <div class="quiz-mode-dropdown" id="quiz-mode-dropdown">
+          <!-- JS-generated: family headers + mode checkboxes -->
+        </div>
+      </div>
+      <button id="quiz-randomize">Randomize</button>
+      <button id="quiz-show" disabled>Show Answer</button>
     </div>
   </div>
 

@@ -17,12 +17,12 @@
   --string-color: #aaa;
   --note-bg: #2a2a4a;
   --note-color: #888;
-  --scale-bg: #0f3460;
+  --scale-bg: #5E6781;
   --scale-color: #e0e0e0;
   --scale-shadow: rgba(15, 52, 96, 0.5);
-  --root-bg: #e94560;
+  --root-bg: #C87C68;
   --root-color: #fff;
-  --root-shadow: rgba(233, 69, 96, 0.6);
+  --root-shadow: rgba(200, 124, 104, 0.6);
   --dot-color: #333;
   --toggle-bg: #16213e;
   --toggle-color: #e0e0e0;
@@ -41,12 +41,12 @@ body.light {
   --string-color: #777;
   --note-bg: #ddd;
   --note-color: #999;
-  --scale-bg: #4a90d9;
+  --scale-bg: #5E6781;
   --scale-color: #fff;
   --scale-shadow: rgba(74, 144, 217, 0.4);
-  --root-bg: #e94560;
+  --root-bg: #C87C68;
   --root-color: #fff;
-  --root-shadow: rgba(233, 69, 96, 0.5);
+  --root-shadow: rgba(200, 124, 104, 0.5);
   --dot-color: #ccc;
   --toggle-bg: #fff;
   --toggle-color: #222;
@@ -183,6 +183,113 @@ h1 {
 .string-btn:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+/* --- Quiz controls --- */
+.controls-quiz {
+  align-items: center;
+}
+
+/* Quiz mode picker dropdown */
+.quiz-mode-picker {
+  position: relative;
+}
+
+#quiz-mode-btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.quiz-mode-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  margin-top: 4px;
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  max-height: 300px;
+  overflow-y: auto;
+  min-width: 240px;
+  padding: 0.4rem 0;
+}
+
+.quiz-mode-dropdown.open {
+  display: block;
+}
+
+.quiz-mode-family {
+  padding: 0.3rem 0.6rem;
+}
+
+.quiz-mode-family label {
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.quiz-mode-item {
+  padding: 0.2rem 0.6rem 0.2rem 1.4rem;
+}
+
+.quiz-mode-item label {
+  font-size: 0.78rem;
+}
+
+.quiz-mode-dropdown label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text);
+  cursor: pointer;
+}
+
+#quiz-randomize,
+#quiz-show {
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+#quiz-randomize:disabled,
+#quiz-show:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.fretboard-wrapper.quiz-hidden .fretboard {
+  visibility: hidden;
+}
+
+.fretboard-wrapper.quiz-hidden {
+  position: relative;
+}
+
+.fretboard-wrapper.quiz-hidden::after {
+  content: "Visualize the pattern...";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  pointer-events: none;
 }
 
 /* --- Fretboard --- */

@@ -1,6 +1,8 @@
 const NOTE_NAMES_SHARP = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
 const NOTE_NAMES_FLAT  = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
 let accidentalMode = 'sharp';
+let quizActive = false;
+let quizSelectedModes; // initialized after SCALE_FAMILIES is defined
 const INTERVAL_NAMES = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
 const TOTAL_FRETS = 22;
 
@@ -51,14 +53,16 @@ const SCALES = {
   mixolydian_b2:    [0, 1, 4, 5, 7, 9, 10],
   lydian_aug_s2:    [0, 3, 4, 6, 8, 9, 11],
   locrian_bb7:      [0, 1, 3, 5, 6, 8, 9],
+  diminished_hw:    [0, 1, 3, 4, 6, 7, 9, 10],
+  diminished_wh:    [0, 2, 3, 5, 6, 8, 9, 11],
 };
 
-// Grouped scale menu: [group label, [[key, display label], ...]]
-const SCALE_GROUPS = [
-  [null, [
+// Two-level scale menu: [family key, family label, [[scale key, display label], ...]]
+const SCALE_FAMILIES = [
+  ['chromatic', 'Chromatic', [
     ['chromatic', 'Chromatic'],
   ]],
-  ['Major Modes', [
+  ['major', 'Major', [
     ['ionian',     'Ionian (Major)'],
     ['dorian',     'Dorian'],
     ['phrygian',   'Phrygian'],
@@ -67,7 +71,7 @@ const SCALE_GROUPS = [
     ['aeolian',    'Aeolian (Natural Minor)'],
     ['locrian',    'Locrian'],
   ]],
-  ['Harmonic Minor', [
+  ['harmonic_minor', 'Harmonic Minor', [
     ['harmonic_minor',   'Harmonic Minor'],
     ['locrian_nat6',     'Locrian ♮6'],
     ['ionian_aug',       'Ionian ♯5'],
@@ -76,7 +80,7 @@ const SCALE_GROUPS = [
     ['lydian_sharp2',    'Lydian ♯9'],
     ['ultralocrian',     'Ultralocrian'],
   ]],
-  ['Melodic Minor', [
+  ['melodic_minor', 'Melodic Minor', [
     ['melodic_minor',    'Melodic Minor'],
     ['dorian_b2',        'Phrygian ♮6 / Dorian ♭2'],
     ['lydian_aug',       'Lydian Augmented'],
@@ -85,7 +89,7 @@ const SCALE_GROUPS = [
     ['locrian_nat2',     'Locrian ♮2'],
     ['altered',          'Altered/Super-Locrian'],
   ]],
-  ['Harmonic Major', [
+  ['harmonic_major', 'Harmonic Major', [
     ['harmonic_major',   'Harmonic Major'],
     ['dorian_b5',        'Dorian ♭5'],
     ['phrygian_b4',      'Phrygian ♭4'],
@@ -94,11 +98,17 @@ const SCALE_GROUPS = [
     ['lydian_aug_s2',    'Lydian Augmented ♯2'],
     ['locrian_bb7',      'Locrian ♭♭7'],
   ]],
-  ['Other', [
+  ['pentatonic', 'Pentatonic', [
     ['pentatonic_major', 'Major Pentatonic'],
     ['pentatonic_minor', 'Minor Pentatonic'],
+  ]],
+  ['hexatonic', 'Hexatonic', [
     ['blues_minor',      'Minor Blues'],
     ['blues_major',      'Major Blues'],
+  ]],
+  ['octatonic', 'Octatonic', [
+    ['diminished_hw',    'Diminished (Half-Whole)'],
+    ['diminished_wh',    'Diminished (Whole-Half)'],
   ]],
 ];
 
@@ -223,21 +233,36 @@ function onPresetChange() {
 populateNoteDropdowns(); // builds root select + tuning controls
 populatePresetSelect();
 
-// Populate scale dropdown with optgroups
-(function populateScaleSelect() {
+// Populate scale family dropdown
+(function populateScaleFamilySelect() {
+  const sel = document.getElementById('scale-family');
+  SCALE_FAMILIES.forEach(([key, label]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = label;
+    sel.appendChild(opt);
+  });
+})();
+
+// Populate mode dropdown based on selected family
+function populateScaleModeSelect() {
+  const familyKey = document.getElementById('scale-family').value;
   const sel = document.getElementById('scale');
-  SCALE_GROUPS.forEach(([groupLabel, items]) => {
-    const parent = groupLabel
-      ? (() => { const g = document.createElement('optgroup'); g.label = groupLabel; sel.appendChild(g); return g; })()
-      : sel;
-    items.forEach(([value, label]) => {
+  sel.innerHTML = '';
+  const family = SCALE_FAMILIES.find(([key]) => key === familyKey);
+  if (family) {
+    family[2].forEach(([value, label]) => {
       const opt = document.createElement('option');
       opt.value = value;
       opt.textContent = label;
-      parent.appendChild(opt);
+      sel.appendChild(opt);
     });
-  });
-})();
+  }
+  render();
+}
+
+document.getElementById('scale-family').addEventListener('change', populateScaleModeSelect);
+populateScaleModeSelect();
 
 // Default root = E
 document.getElementById('root').value = 4;
@@ -276,7 +301,9 @@ function render() {
 
       const label = displayMode === 'letters'
         ? names[pitch]
-        : INTERVAL_NAMES[interval];
+        : displayMode === 'intervals'
+        ? INTERVAL_NAMES[interval]
+        : '';
 
       const cellDiv = document.createElement('div');
       cellDiv.className = 'fret-cell';
@@ -344,5 +371,149 @@ accidentalBtn.addEventListener('click', () => {
 });
 
 document.getElementById('preset').addEventListener('change', onPresetChange);
+
+// --- Quiz / Randomizer ---
+
+// Initialize quizSelectedModes now that SCALE_FAMILIES is defined
+quizSelectedModes = new Set(
+  SCALE_FAMILIES
+    .filter(([key]) => key === 'major' || key === 'pentatonic')
+    .flatMap(([, , modes]) => modes.map(([modeKey]) => modeKey))
+);
+
+function buildQuizModeDropdown() {
+  const container = document.getElementById('quiz-mode-dropdown');
+  container.innerHTML = '';
+
+  SCALE_FAMILIES.forEach(([familyKey, familyLabel, modes]) => {
+    if (familyKey === 'chromatic') return;
+
+    // Family header row
+    const familyRow = document.createElement('div');
+    familyRow.className = 'quiz-mode-family';
+    const familyLbl = document.createElement('label');
+    const familyCb = document.createElement('input');
+    familyCb.type = 'checkbox';
+    familyCb.dataset.family = familyKey;
+    familyLbl.appendChild(familyCb);
+    familyLbl.appendChild(document.createTextNode(familyLabel));
+    familyRow.appendChild(familyLbl);
+    container.appendChild(familyRow);
+
+    // Mode rows
+    const modeCbs = [];
+    modes.forEach(([modeKey, modeLabel]) => {
+      const modeRow = document.createElement('div');
+      modeRow.className = 'quiz-mode-item';
+      const modeLbl = document.createElement('label');
+      const modeCb = document.createElement('input');
+      modeCb.type = 'checkbox';
+      modeCb.value = modeKey;
+      modeCb.checked = quizSelectedModes.has(modeKey);
+      modeCb.addEventListener('change', () => {
+        if (modeCb.checked) quizSelectedModes.add(modeKey);
+        else quizSelectedModes.delete(modeKey);
+        updateFamilyCheckbox(familyCb, modeCbs);
+        updateQuizModeBtn();
+      });
+      modeLbl.appendChild(modeCb);
+      modeLbl.appendChild(document.createTextNode(modeLabel));
+      modeRow.appendChild(modeLbl);
+      container.appendChild(modeRow);
+      modeCbs.push(modeCb);
+    });
+
+    // Family checkbox toggles all its modes
+    familyCb.addEventListener('change', () => {
+      const checked = familyCb.checked;
+      modeCbs.forEach(cb => {
+        cb.checked = checked;
+        if (checked) quizSelectedModes.add(cb.value);
+        else quizSelectedModes.delete(cb.value);
+      });
+      familyCb.indeterminate = false;
+      updateQuizModeBtn();
+    });
+
+    // Set initial family checkbox state
+    updateFamilyCheckbox(familyCb, modeCbs);
+  });
+
+  updateQuizModeBtn();
+}
+
+function updateFamilyCheckbox(familyCb, modeCbs) {
+  const checkedCount = modeCbs.filter(cb => cb.checked).length;
+  familyCb.checked = checkedCount === modeCbs.length;
+  familyCb.indeterminate = checkedCount > 0 && checkedCount < modeCbs.length;
+}
+
+function updateQuizModeBtn() {
+  const btn = document.getElementById('quiz-mode-btn');
+  btn.textContent = `Modes (${quizSelectedModes.size} selected)`;
+  document.getElementById('quiz-randomize').disabled = quizSelectedModes.size === 0;
+}
+
+function toggleQuizDropdown() {
+  document.getElementById('quiz-mode-dropdown').classList.toggle('open');
+}
+
+function closeQuizDropdown(e) {
+  const picker = document.getElementById('quiz-mode-picker');
+  if (!picker.contains(e.target)) {
+    document.getElementById('quiz-mode-dropdown').classList.remove('open');
+  }
+}
+
+function randomizeQuiz() {
+  // Build pool from individually selected modes
+  const pool = [];
+  SCALE_FAMILIES.forEach(([familyKey, , modes]) => {
+    modes.forEach(([modeKey]) => {
+      if (quizSelectedModes.has(modeKey)) {
+        pool.push({ familyKey, modeKey });
+      }
+    });
+  });
+  if (pool.length === 0) return;
+
+  // Pick random root and mode
+  const rootVal = Math.floor(Math.random() * 12);
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+
+  // Set dropdown values
+  document.getElementById('root').value = rootVal;
+  document.getElementById('scale-family').value = pick.familyKey;
+  populateScaleModeSelect();
+  document.getElementById('scale').value = pick.modeKey;
+  render();
+
+  quizActive = true;
+  applyQuizState();
+}
+
+function showQuizAnswer() {
+  quizActive = false;
+  applyQuizState();
+}
+
+function applyQuizState() {
+  const wrapper = document.querySelector('.fretboard-wrapper');
+  wrapper.classList.toggle('quiz-hidden', quizActive);
+
+  document.getElementById('quiz-show').disabled = !quizActive;
+
+  // Disable/enable dropdowns to prevent peeking
+  ['root', 'scale-family', 'scale', 'display'].forEach(id => {
+    document.getElementById(id).disabled = quizActive;
+  });
+}
+
+buildQuizModeDropdown();
+
+document.getElementById('quiz-mode-btn').addEventListener('click', toggleQuizDropdown);
+document.addEventListener('click', closeQuizDropdown);
+document.getElementById('quiz-randomize').addEventListener('click', randomizeQuiz);
+document.getElementById('quiz-show').addEventListener('click', showQuizAnswer);
 
 render();
