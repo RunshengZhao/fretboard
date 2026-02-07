@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guitar Fretboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Guitar Fretboard</h1>
+    <button id="theme-toggle" aria-label="Toggle light/dark mode">Dark</button>
+  </div>
+
+  <div class="controls">
+    <div class="controls-row">
+      <label>
+        Preset
+        <select id="preset"></select>
+      </label>
+      <button id="accidental-toggle" aria-label="Toggle sharp/flat notation">♯</button>
+      <label>
+        Root Note
+        <select id="root"></select>
+      </label>
+      <label>
+        Scale
+        <select id="scale"></select>
+      </label>
+      <label>
+        Display
+        <select id="display">
+          <option value="letters">Letter Names</option>
+          <option value="intervals">Intervals</option>
+        </select>
+      </label>
+    </div>
+    <div class="controls-row controls-tunings" id="tuning-controls">
+      <!-- JS builds: per-string selects + add/remove buttons -->
+    </div>
+  </div>
+
+  <div class="fretboard-wrapper">
+    <div class="fretboard" id="fretboard"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

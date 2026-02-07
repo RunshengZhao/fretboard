@@ -1,0 +1,284 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* --- Theme variables --- */
+:root {
+  --bg: #1a1a2e;
+  --text: #e0e0e0;
+  --text-muted: #888;
+  --text-dim: #555;
+  --control-bg: #16213e;
+  --control-border: #333;
+  --fret-border: #444;
+  --nut-border: #ccc;
+  --string-color: #aaa;
+  --note-bg: #2a2a4a;
+  --note-color: #888;
+  --scale-bg: #0f3460;
+  --scale-color: #e0e0e0;
+  --scale-shadow: rgba(15, 52, 96, 0.5);
+  --root-bg: #e94560;
+  --root-color: #fff;
+  --root-shadow: rgba(233, 69, 96, 0.6);
+  --dot-color: #333;
+  --toggle-bg: #16213e;
+  --toggle-color: #e0e0e0;
+  --toggle-border: #444;
+}
+
+body.light {
+  --bg: #f5f5f5;
+  --text: #222;
+  --text-muted: #666;
+  --text-dim: #999;
+  --control-bg: #fff;
+  --control-border: #ccc;
+  --fret-border: #bbb;
+  --nut-border: #444;
+  --string-color: #777;
+  --note-bg: #ddd;
+  --note-color: #999;
+  --scale-bg: #4a90d9;
+  --scale-color: #fff;
+  --scale-shadow: rgba(74, 144, 217, 0.4);
+  --root-bg: #e94560;
+  --root-color: #fff;
+  --root-shadow: rgba(233, 69, 96, 0.5);
+  --dot-color: #ccc;
+  --toggle-bg: #fff;
+  --toggle-color: #222;
+  --toggle-border: #ccc;
+}
+
+/* --- Layout --- */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding: 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+h1 {
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+}
+
+/* --- Theme toggle button --- */
+#theme-toggle {
+  position: absolute;
+  right: 0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid var(--toggle-border);
+  background: var(--toggle-bg);
+  color: var(--toggle-color);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+/* --- Accidental toggle button --- */
+#accidental-toggle {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  align-self: flex-end;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+#accidental-toggle:active,
+#accidental-toggle:focus {
+  outline: none;
+  border-color: var(--control-border);
+}
+
+/* --- Controls --- */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.controls-row {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.controls-tunings {
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.controls-tunings label {
+  font-size: 0.65rem;
+}
+
+.controls select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.controls-tunings select {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.4rem;
+}
+
+/* Add/remove string buttons */
+.string-btn {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.string-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* --- Fretboard --- */
+.fretboard-wrapper {
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+.fretboard {
+  display: grid;
+  min-width: max-content;
+  margin: 0 auto;
+}
+
+.fret-number {
+  width: 52px;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-align: center;
+  padding-bottom: 0.4rem;
+}
+
+.fret-cell {
+  width: 52px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-right: 2px solid var(--fret-border);
+}
+
+.fret-cell.nut {
+  border-right: 3px solid var(--nut-border);
+}
+
+/* String line */
+.fret-cell::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--string-color);
+  transform: translateY(-50%);
+}
+
+/* Note bubble */
+.note {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--note-bg);
+  color: var(--note-color);
+  transition: all 0.15s ease;
+}
+
+.note.in-scale {
+  background: var(--scale-bg);
+  color: var(--scale-color);
+  box-shadow: 0 0 6px var(--scale-shadow);
+}
+
+.note.is-root {
+  background: var(--root-bg);
+  color: var(--root-color);
+  box-shadow: 0 0 10px var(--root-shadow);
+}
+
+.note.hidden {
+  opacity: 0;
+}
+
+/* Fret markers (dots) */
+.fret-marker {
+  width: 52px;
+  height: 0.5rem;
+  margin-top: 0.3rem;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.fret-marker .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dot-color);
+}
