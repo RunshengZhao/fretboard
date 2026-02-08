@@ -3,6 +3,7 @@ const NOTE_NAMES_FLAT  = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭
 let accidentalMode = 'sharp';
 let quizActive = false;
 let quizSelectedModes; // initialized after SCALE_FAMILIES is defined
+let selectedPosition = null; // null = show all, or 1..N for a specific position
 const INTERVAL_NAMES = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
 const TOTAL_FRETS = 22;
 
@@ -92,7 +93,7 @@ const SCALE_FAMILIES = [
   ['harmonic_major', 'Harmonic Major', [
     ['harmonic_major',   'Harmonic Major'],
     ['dorian_b5',        'Dorian ♭5'],
-    ['phrygian_b4',      'Phrygian ♭4'],
+    ['phrygian_b4',      'Altered ♮5/Phrygian ♭4'],
     ['lydian_b3',        'Lydian ♭3'],
     ['mixolydian_b2',    'Mixolydian ♭2'],
     ['lydian_aug_s2',    'Lydian Augmented ♯2'],
@@ -173,8 +174,8 @@ function buildTuningControls() {
   });
   container.appendChild(removeBtn);
 
-  // Per-string selects, numbered high-to-low (String 1 = highest pitch = last in array)
-  for (let i = currentTunings.length - 1; i >= 0; i--) {
+  // Per-string selects, numbered low-to-high (String 6/lowest = first in array)
+  for (let i = 0; i < currentTunings.length; i++) {
     const stringNum = currentTunings.length - i;
     const label = document.createElement('label');
     label.innerHTML = `<span>String ${stringNum}</span>`;
@@ -264,8 +265,174 @@ function populateScaleModeSelect() {
 document.getElementById('scale-family').addEventListener('change', populateScaleModeSelect);
 populateScaleModeSelect();
 
-// Default root = E
-document.getElementById('root').value = 4;
+// Default root = C, family = Major, mode = Ionian, display = Letter Names
+document.getElementById('root').value = 0;
+document.getElementById('scale-family').value = 'major';
+populateScaleModeSelect();
+document.getElementById('scale').value = 'ionian';
+document.getElementById('display').value = 'letters';
+
+// --- Position system ---
+
+function getParentScaleInfo(scaleKey, root) {
+  if (scaleKey === 'chromatic') return null;
+
+  // Find which family contains this scale
+  let familyEntry = null;
+  for (const entry of SCALE_FAMILIES) {
+    if (entry[2].some(([key]) => key === scaleKey)) {
+      familyEntry = entry;
+      break;
+    }
+  }
+  if (!familyEntry) return null;
+
+  const parentKey = familyEntry[2][0][0]; // first mode is the parent
+  const parentIntervals = SCALES[parentKey];
+  const modeIntervals = SCALES[scaleKey];
+
+  // Algorithmically find degree offset: find d such that rotating the parent
+  // by parentIntervals[d] yields the same pitch-class set as the mode
+  const parentSet = new Set(parentIntervals);
+  let degreeIndex = 0;
+  for (let d = 0; d < parentIntervals.length; d++) {
+    const offset = parentIntervals[d];
+    const rotated = new Set(modeIntervals.map(i => (i + offset) % 12));
+    if (rotated.size === parentSet.size && [...rotated].every(v => parentSet.has(v))) {
+      degreeIndex = d;
+      break;
+    }
+  }
+
+  const parentRoot = (root - parentIntervals[degreeIndex] + 12) % 12;
+  return { parentRoot, parentIntervals, degreeIndex };
+}
+
+function allPitchClassesCovered(startFret, width, scaleIntervals, root, tunings) {
+  const degreeIndexByInterval = new Map();
+  scaleIntervals.forEach((interval, idx) => degreeIndexByInterval.set(interval, idx));
+
+  const covered = new Set();
+  for (const tuning of tunings) {
+    for (let f = startFret; f < startFret + width; f++) {
+      const pitch = (tuning + f) % 12;
+      const interval = (pitch - root + 12) % 12;
+      if (scaleIntervals.includes(interval)) covered.add(interval);
+    }
+  }
+  if (covered.size !== scaleIntervals.length) return false;
+
+  let prevLastDegree = null;
+  for (let s = 0; s < tunings.length; s++) {
+    const tuning = tunings[s];
+    const degreesOnString = [];
+    for (let f = startFret; f < startFret + width; f++) {
+      const pitch = (tuning + f) % 12;
+      const interval = (pitch - root + 12) % 12;
+      if (degreeIndexByInterval.has(interval)) {
+        degreesOnString.push(degreeIndexByInterval.get(interval));
+      }
+    }
+
+    if (degreesOnString.length === 0) return false;
+    const firstDegree = degreesOnString[0];
+    const lastDegree = degreesOnString[degreesOnString.length - 1];
+
+    if (prevLastDegree !== null) {
+      const nextDegree = (prevLastDegree + 1) % scaleIntervals.length;
+      if (firstDegree !== prevLastDegree && firstDegree !== nextDegree) return false;
+    }
+
+    prevLastDegree = lastDegree;
+  }
+
+  return true;
+}
+
+function computePositions(scaleKey, root, tunings) {
+  const info = getParentScaleInfo(scaleKey, root);
+  if (!info) return [];
+
+  const { parentRoot, parentIntervals } = info;
+  const scaleIntervals = SCALES[scaleKey];
+  const refTuning = tunings[0]; // lowest-pitched string
+  const positions = [];
+
+  const getPositionWindows = (anchorFret, width) => {
+    const windows = [];
+    let start = anchorFret;
+    while (start < 0) start += 12;
+    for (; start + width - 1 <= TOTAL_FRETS; start += 12) {
+      windows.push({ start, end: start + width - 1 });
+    }
+    return windows;
+  };
+
+  for (let d = 0; d < parentIntervals.length; d++) {
+    const anchorPitch = (parentRoot + parentIntervals[d]) % 12;
+    const anchorFret = (anchorPitch - refTuning + 12) % 12;
+
+    let width = 4;
+    if (!allPitchClassesCovered(anchorFret, 4, scaleIntervals, root, tunings)) {
+      width = 5;
+    }
+
+    const windows = getPositionWindows(anchorFret, width);
+    if (windows.length === 0) continue;
+    positions.push({ degree: d + 1, anchorFret, width, windows });
+  }
+
+  return positions;
+}
+
+function isNoteInPosition(fret, position) {
+  if (position.windows) {
+    return position.windows.some(w => fret >= w.start && fret <= w.end);
+  }
+  return ((fret - position.anchorFret + 12) % 12) < position.width;
+}
+
+// --- Position dropdown ---
+
+function populatePositionSelect() {
+  const sel = document.getElementById('position');
+  const scaleKey = document.getElementById('scale').value;
+  const root = parseInt(document.getElementById('root').value);
+  const prevValue = sel.value;
+
+  sel.innerHTML = '';
+  const allOpt = document.createElement('option');
+  allOpt.value = '';
+  allOpt.textContent = 'All';
+  sel.appendChild(allOpt);
+
+  if (scaleKey === 'chromatic') {
+    sel.disabled = true;
+    selectedPosition = null;
+    return;
+  }
+
+  sel.disabled = quizActive;
+  const positions = computePositions(scaleKey, root, currentTunings);
+  const names = getNoteNames();
+  const info = getParentScaleInfo(scaleKey, root);
+
+  positions.forEach(pos => {
+    const anchorPitch = (info.parentRoot + info.parentIntervals[pos.degree - 1]) % 12;
+    const opt = document.createElement('option');
+    opt.value = pos.degree;
+    opt.textContent = `Position ${pos.degree} (${names[anchorPitch]})`;
+    sel.appendChild(opt);
+  });
+
+  // Preserve selection if still valid
+  if (prevValue && sel.querySelector(`option[value="${prevValue}"]`)) {
+    sel.value = prevValue;
+  } else {
+    sel.value = '';
+    selectedPosition = null;
+  }
+}
 
 // --- Rendering ---
 
@@ -276,8 +443,19 @@ function render() {
   const scaleIntervals = SCALES[scaleKey];
   const names = getNoteNames();
 
+  populatePositionSelect();
+
+  // Compute active position once for the entire render
+  let activePos = null;
+  if (selectedPosition !== null && scaleKey !== 'chromatic') {
+    const positions = computePositions(scaleKey, root, currentTunings);
+    activePos = positions.find(p => p.degree === selectedPosition) || null;
+  }
+
   const fretboard = document.getElementById('fretboard');
   fretboard.innerHTML = '';
+  const fretboardWrapper = document.querySelector('.fretboard-wrapper');
+  fretboardWrapper.classList.toggle('position-focus', Boolean(activePos));
 
   const cols = TOTAL_FRETS + 1; // 0 through 22
   fretboard.style.gridTemplateColumns = `repeat(${cols}, 52px)`;
@@ -311,9 +489,24 @@ function render() {
 
       const noteDiv = document.createElement('div');
       noteDiv.className = 'note';
-      if (isRoot) noteDiv.classList.add('is-root');
-      else if (inScale) noteDiv.classList.add('in-scale');
-      else if (scaleKey !== 'chromatic') noteDiv.classList.add('hidden');
+
+      // Position filtering
+      const inPosition = !activePos || isNoteInPosition(fret, activePos);
+      const outOfPosition = activePos && (isRoot || inScale) && !inPosition;
+      if (activePos && !inPosition) {
+        cellDiv.classList.add('out-of-position-cell');
+      }
+
+      if (isRoot) {
+        noteDiv.classList.add('is-root');
+        if (outOfPosition) noteDiv.classList.add('out-of-position');
+      } else if (inScale) {
+        noteDiv.classList.add('in-scale');
+        if (outOfPosition) noteDiv.classList.add('out-of-position');
+      } else if (scaleKey !== 'chromatic') {
+        noteDiv.classList.add('hidden');
+      }
+
       noteDiv.textContent = label;
       cellDiv.appendChild(noteDiv);
 
@@ -370,6 +563,12 @@ accidentalBtn.addEventListener('click', () => {
   document.getElementById(id).addEventListener('change', render);
 });
 
+document.getElementById('position').addEventListener('change', () => {
+  const val = document.getElementById('position').value;
+  selectedPosition = val === '' ? null : parseInt(val);
+  render();
+});
+
 document.getElementById('preset').addEventListener('change', onPresetChange);
 
 // --- Quiz / Randomizer ---
@@ -377,7 +576,7 @@ document.getElementById('preset').addEventListener('change', onPresetChange);
 // Initialize quizSelectedModes now that SCALE_FAMILIES is defined
 quizSelectedModes = new Set(
   SCALE_FAMILIES
-    .filter(([key]) => key === 'major' || key === 'pentatonic')
+    .filter(([key]) => key === 'harmonic_major')
     .flatMap(([, , modes]) => modes.map(([modeKey]) => modeKey))
 );
 
@@ -486,6 +685,17 @@ function randomizeQuiz() {
   document.getElementById('scale-family').value = pick.familyKey;
   populateScaleModeSelect();
   document.getElementById('scale').value = pick.modeKey;
+  // Randomize position (exclude "All") if any valid positions exist
+  const positions = computePositions(pick.modeKey, rootVal, currentTunings);
+  if (positions.length > 0) {
+    const chosen = positions[Math.floor(Math.random() * positions.length)];
+    document.getElementById('position').value = chosen.degree;
+    selectedPosition = chosen.degree;
+  } else {
+    document.getElementById('position').value = '';
+    selectedPosition = null;
+  }
+
   render();
 
   quizActive = true;
@@ -504,7 +714,7 @@ function applyQuizState() {
   document.getElementById('quiz-show').disabled = !quizActive;
 
   // Disable/enable dropdowns to prevent peeking
-  ['root', 'scale-family', 'scale', 'display'].forEach(id => {
+  ['root', 'scale-family', 'scale', 'display', 'position'].forEach(id => {
     document.getElementById(id).disabled = quizActive;
   });
 }

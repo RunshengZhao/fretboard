@@ -39,6 +39,12 @@
           <option value="intervals">Intervals</option>
         </select>
       </label>
+      <label>
+        Position
+        <select id="position">
+          <option value="">All</option>
+        </select>
+      </label>
     </div>
     <div class="controls-row controls-tunings" id="tuning-controls">
       <!-- JS builds: per-string selects + add/remove buttons -->
@@ -50,7 +56,7 @@
           <!-- JS-generated: family headers + mode checkboxes -->
         </div>
       </div>
-      <button id="quiz-randomize">Randomize</button>
+      <button id="quiz-randomize">Quiz Me!</button>
       <button id="quiz-show" disabled>Show Answer</button>
     </div>
   </div>
@@ -58,6 +64,11 @@
   <div class="fretboard-wrapper">
     <div class="fretboard" id="fretboard"></div>
   </div>
+
+  <footer class="creator">
+    <div class="creator-name">Created by: Runsheng Zhao | 赵润生(and AI)</div>
+    <a class="creator-link" href="https://runshengzhao.com" target="_blank" rel="noopener">runshengzhao.com</a>
+  </footer>
 
   <script src="app.js"></script>
 </body>
