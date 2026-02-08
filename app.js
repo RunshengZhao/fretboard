@@ -2,7 +2,7 @@ const NOTE_NAMES_SHARP = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯
 const NOTE_NAMES_FLAT  = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
 let accidentalMode = 'sharp';
 let quizActive = false;
-let quizSelectedModes; // initialized after SCALE_FAMILIES is defined
+let quizSelectedCollections; // initialized after COLLECTIONS is defined
 let selectedPosition = null; // null = show all, or 1..N for a specific position
 const INTERVAL_NAMES = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
 const TOTAL_FRETS = 22;
@@ -20,98 +20,161 @@ const PRESETS = {
 
 let currentTunings = [...PRESETS.guitar_6.tuning]; // default 6-string
 
-const SCALES = {
-  chromatic:        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-  ionian:           [0, 2, 4, 5, 7, 9, 11],
-  dorian:           [0, 2, 3, 5, 7, 9, 10],
-  phrygian:         [0, 1, 3, 5, 7, 8, 10],
-  lydian:           [0, 2, 4, 6, 7, 9, 11],
-  mixolydian:       [0, 2, 4, 5, 7, 9, 10],
-  aeolian:          [0, 2, 3, 5, 7, 8, 10],
-  locrian:          [0, 1, 3, 5, 6, 8, 10],
-  pentatonic_major: [0, 2, 4, 7, 9],
-  pentatonic_minor: [0, 3, 5, 7, 10],
-  blues_minor:      [0, 3, 5, 6, 7, 10],
-  blues_major:      [0, 2, 3, 4, 7, 9],
-  harmonic_minor:   [0, 2, 3, 5, 7, 8, 11],
-  locrian_nat6:     [0, 1, 3, 5, 6, 9, 10],
-  ionian_aug:       [0, 2, 4, 5, 8, 9, 11],
-  dorian_sharp4:    [0, 2, 3, 6, 7, 9, 10],
-  phrygian_dom:     [0, 1, 4, 5, 7, 8, 10],
-  lydian_sharp2:    [0, 3, 4, 6, 7, 9, 11],
-  ultralocrian:     [0, 1, 3, 4, 6, 8, 9],
-  melodic_minor:    [0, 2, 3, 5, 7, 9, 11],
-  dorian_b2:        [0, 1, 3, 5, 7, 9, 10],
-  lydian_aug:       [0, 2, 4, 6, 8, 9, 11],
-  lydian_dom:       [0, 2, 4, 6, 7, 9, 10],
-  mixolydian_b6:    [0, 2, 4, 5, 7, 8, 10],
-  locrian_nat2:     [0, 2, 3, 5, 6, 8, 10],
-  altered:          [0, 1, 3, 4, 6, 8, 10],
-  harmonic_major:   [0, 2, 4, 5, 7, 8, 11],
-  dorian_b5:        [0, 2, 3, 5, 6, 9, 10],
-  phrygian_b4:      [0, 1, 3, 4, 7, 8, 10],
-  lydian_b3:        [0, 2, 3, 6, 7, 9, 11],
-  mixolydian_b2:    [0, 1, 4, 5, 7, 9, 10],
-  lydian_aug_s2:    [0, 3, 4, 6, 8, 9, 11],
-  locrian_bb7:      [0, 1, 3, 5, 6, 8, 9],
-  diminished_hw:    [0, 1, 3, 4, 6, 7, 9, 10],
-  diminished_wh:    [0, 2, 3, 5, 6, 8, 9, 11],
-};
+// --- Three-level scale system ---
+// Level 1: Note count (cardinality)
+// Level 2: Pitch collection (specific set of pitch classes)
+// Level 3: Mode/inversion (rotation of the same pitch set)
 
-// Two-level scale menu: [family key, family label, [[scale key, display label], ...]]
-const SCALE_FAMILIES = [
-  ['chromatic', 'Chromatic', [
-    ['chromatic', 'Chromatic'],
-  ]],
-  ['major', 'Major', [
-    ['ionian',     'Ionian (Major)'],
-    ['dorian',     'Dorian'],
-    ['phrygian',   'Phrygian'],
-    ['lydian',     'Lydian'],
-    ['mixolydian', 'Mixolydian'],
-    ['aeolian',    'Aeolian (Natural Minor)'],
-    ['locrian',    'Locrian'],
-  ]],
-  ['harmonic_minor', 'Harmonic Minor', [
-    ['harmonic_minor',   'Harmonic Minor'],
-    ['locrian_nat6',     'Locrian ♮6'],
-    ['ionian_aug',       'Ionian ♯5'],
-    ['dorian_sharp4',    'Dorian ♯4'],
-    ['phrygian_dom',     'Phrygian Dominant'],
-    ['lydian_sharp2',    'Lydian ♯9'],
-    ['ultralocrian',     'Ultralocrian'],
-  ]],
-  ['melodic_minor', 'Melodic Minor', [
-    ['melodic_minor',    'Melodic Minor'],
-    ['dorian_b2',        'Phrygian ♮6 / Dorian ♭2'],
-    ['lydian_aug',       'Lydian Augmented'],
-    ['lydian_dom',       'Lydian Dominant'],
-    ['mixolydian_b6',    'Mixolydian ♭6/Aeolian-Major'],
-    ['locrian_nat2',     'Locrian ♮2'],
-    ['altered',          'Altered/Super-Locrian'],
-  ]],
-  ['harmonic_major', 'Harmonic Major', [
-    ['harmonic_major',   'Harmonic Major'],
-    ['dorian_b5',        'Dorian ♭5'],
-    ['phrygian_b4',      'Altered ♮5/Phrygian ♭4'],
-    ['lydian_b3',        'Lydian ♭3'],
-    ['mixolydian_b2',    'Mixolydian ♭2'],
-    ['lydian_aug_s2',    'Lydian Augmented ♯2'],
-    ['locrian_bb7',      'Locrian ♭♭7'],
-  ]],
-  ['pentatonic', 'Pentatonic', [
-    ['pentatonic_major', 'Major Pentatonic'],
-    ['pentatonic_minor', 'Minor Pentatonic'],
-  ]],
-  ['hexatonic', 'Hexatonic', [
-    ['blues_minor',      'Minor Blues'],
-    ['blues_major',      'Major Blues'],
-  ]],
-  ['octatonic', 'Octatonic', [
-    ['diminished_hw',    'Diminished (Half-Whole)'],
-    ['diminished_wh',    'Diminished (Whole-Half)'],
-  ]],
+const NOTE_COUNTS = [
+  { key: 'chromatic', label: 'Chromatic' },
+  { key: 'triad',     label: 'Triad' },
+  { key: 'penta',     label: 'Pentatonic' },
+  { key: 'hexa',      label: 'Hexatonic' },
+  { key: 'hepta',     label: 'Heptatonic' },
+  { key: 'octa',      label: 'Octatonic' },
 ];
+
+// Each collection: { key, noteCount, label, intervals (root-position), modes[] }
+// modes[i].label = display name; index = degree index for getModeIntervals()
+// Only musically distinct modes are listed (symmetric duplicates omitted)
+const COLLECTIONS = [
+  // Chromatic
+  {
+    key: 'chromatic', noteCount: 'chromatic', label: 'Chromatic',
+    intervals: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    modes: [{ label: 'Chromatic' }],
+  },
+
+  // Triads
+  {
+    key: 'triad_major', noteCount: 'triad', label: 'Major',
+    intervals: [0, 4, 7],
+    modes: [{ label: 'Root Position' }, { label: '1st Inversion' }, { label: '2nd Inversion' }],
+  },
+  {
+    key: 'triad_minor', noteCount: 'triad', label: 'Minor',
+    intervals: [0, 3, 7],
+    modes: [{ label: 'Root Position' }, { label: '1st Inversion' }, { label: '2nd Inversion' }],
+  },
+  {
+    key: 'triad_dim', noteCount: 'triad', label: 'Diminished',
+    intervals: [0, 3, 6],
+    modes: [{ label: 'Root Position' }, { label: '1st Inversion' }, { label: '2nd Inversion' }],
+  },
+  {
+    key: 'triad_aug', noteCount: 'triad', label: 'Augmented',
+    intervals: [0, 4, 8],
+    modes: [{ label: 'Root Position' }], // all inversions identical due to symmetry
+  },
+  {
+    key: 'triad_sus', noteCount: 'triad', label: 'Sus',
+    intervals: [0, 2, 7],
+    modes: [{ label: 'Sus2' }, { label: 'Mode 2' }, { label: 'Sus4' }],
+  },
+
+  // Pentatonic
+  {
+    key: 'penta_major', noteCount: 'penta', label: 'Major',
+    intervals: [0, 2, 4, 7, 9],
+    modes: [
+      { label: 'Major Pentatonic' },
+      { label: 'Mode 2' },
+      { label: 'Mode 3' },
+      { label: 'Mode 4' },
+      { label: 'Minor Pentatonic' },
+    ],
+  },
+
+  // Hexatonic
+  {
+    key: 'hexa_blues', noteCount: 'hexa', label: 'Blues',
+    intervals: [0, 3, 5, 6, 7, 10],
+    modes: [
+      { label: 'Minor Blues' },
+      { label: 'Major Blues' },
+      { label: 'Mode 3' },
+      { label: 'Mode 4' },
+      { label: 'Mode 5' },
+      { label: 'Mode 6' },
+    ],
+  },
+
+  // Heptatonic
+  {
+    key: 'hepta_major', noteCount: 'hepta', label: 'Major',
+    intervals: [0, 2, 4, 5, 7, 9, 11],
+    modes: [
+      { label: 'Ionian (Major)' },
+      { label: 'Dorian' },
+      { label: 'Phrygian' },
+      { label: 'Lydian' },
+      { label: 'Mixolydian' },
+      { label: 'Aeolian (Natural Minor)' },
+      { label: 'Locrian' },
+    ],
+  },
+  {
+    key: 'hepta_harm_min', noteCount: 'hepta', label: 'Harmonic Minor',
+    intervals: [0, 2, 3, 5, 7, 8, 11],
+    modes: [
+      { label: 'Harmonic Minor' },
+      { label: 'Locrian ♮6' },
+      { label: 'Ionian ♯5' },
+      { label: 'Dorian ♯4' },
+      { label: 'Phrygian Dominant' },
+      { label: 'Lydian ♯9' },
+      { label: 'Ultralocrian' },
+    ],
+  },
+  {
+    key: 'hepta_mel_min', noteCount: 'hepta', label: 'Melodic Minor',
+    intervals: [0, 2, 3, 5, 7, 9, 11],
+    modes: [
+      { label: 'Melodic Minor' },
+      { label: 'Phrygian ♮6 / Dorian ♭2' },
+      { label: 'Lydian Augmented' },
+      { label: 'Lydian Dominant' },
+      { label: 'Mixolydian ♭6/Aeolian-Major' },
+      { label: 'Locrian ♮2' },
+      { label: 'Altered/Super-Locrian' },
+    ],
+  },
+  {
+    key: 'hepta_harm_maj', noteCount: 'hepta', label: 'Harmonic Major',
+    intervals: [0, 2, 4, 5, 7, 8, 11],
+    modes: [
+      { label: 'Harmonic Major' },
+      { label: 'Dorian ♭5' },
+      { label: 'Altered ♮5/Phrygian ♭4' },
+      { label: 'Lydian ♭3' },
+      { label: 'Mixolydian ♭2' },
+      { label: 'Lydian Augmented ♯2' },
+      { label: 'Locrian ♭♭7' },
+    ],
+  },
+
+  // Octatonic
+  {
+    key: 'octa_dim', noteCount: 'octa', label: 'Diminished',
+    intervals: [0, 1, 3, 4, 6, 7, 9, 10],
+    modes: [{ label: 'Half-Whole' }, { label: 'Whole-Half' }], // only 2 distinct
+  },
+];
+
+// Compute mode intervals by rotating a collection's pitch set
+function getModeIntervals(collectionIntervals, degreeIndex) {
+  return collectionIntervals
+    .map(i => (i - collectionIntervals[degreeIndex] + 12) % 12)
+    .sort((a, b) => a - b);
+}
+
+// Read current state from the 3 dropdowns
+function getCurrentSelection() {
+  const collectionKey = document.getElementById('collection').value;
+  const degreeIndex = parseInt(document.getElementById('mode').value) || 0;
+  const collection = COLLECTIONS.find(c => c.key === collectionKey);
+  return { collection, degreeIndex };
+}
 
 // --- Populate dropdowns ---
 
@@ -229,83 +292,74 @@ function onPresetChange() {
   }
 }
 
-// --- Initialize dropdowns ---
+// --- Three-level dropdown cascade ---
 
-populateNoteDropdowns(); // builds root select + tuning controls
-populatePresetSelect();
-
-// Populate scale family dropdown
-(function populateScaleFamilySelect() {
-  const sel = document.getElementById('scale-family');
-  SCALE_FAMILIES.forEach(([key, label]) => {
+function populateNoteCountSelect() {
+  const sel = document.getElementById('note-count');
+  sel.innerHTML = '';
+  NOTE_COUNTS.forEach(nc => {
     const opt = document.createElement('option');
-    opt.value = key;
-    opt.textContent = label;
+    opt.value = nc.key;
+    opt.textContent = nc.label;
     sel.appendChild(opt);
   });
-})();
+}
 
-// Populate mode dropdown based on selected family
-function populateScaleModeSelect() {
-  const familyKey = document.getElementById('scale-family').value;
-  const sel = document.getElementById('scale');
+function populateCollectionSelect() {
+  const noteCountKey = document.getElementById('note-count').value;
+  const sel = document.getElementById('collection');
   sel.innerHTML = '';
-  const family = SCALE_FAMILIES.find(([key]) => key === familyKey);
-  if (family) {
-    family[2].forEach(([value, label]) => {
+  COLLECTIONS
+    .filter(c => c.noteCount === noteCountKey)
+    .forEach(c => {
       const opt = document.createElement('option');
-      opt.value = value;
-      opt.textContent = label;
+      opt.value = c.key;
+      opt.textContent = c.label;
+      sel.appendChild(opt);
+    });
+  populateModeSelect();
+}
+
+function populateModeSelect() {
+  const collectionKey = document.getElementById('collection').value;
+  const collection = COLLECTIONS.find(c => c.key === collectionKey);
+  const sel = document.getElementById('mode');
+  sel.innerHTML = '';
+  if (collection) {
+    collection.modes.forEach((m, idx) => {
+      const opt = document.createElement('option');
+      opt.value = idx;
+      opt.textContent = m.label;
       sel.appendChild(opt);
     });
   }
   render();
 }
 
-document.getElementById('scale-family').addEventListener('change', populateScaleModeSelect);
-populateScaleModeSelect();
+// --- Initialize dropdowns ---
 
-// Default root = C, family = Major, mode = Ionian, display = Letter Names
+populateNoteDropdowns(); // builds root select + tuning controls
+populatePresetSelect();
+populateNoteCountSelect();
+
+document.getElementById('note-count').addEventListener('change', populateCollectionSelect);
+document.getElementById('collection').addEventListener('change', populateModeSelect);
+
+// Defaults: Heptatonic → Major → Ionian, Root = C, Display = Letter Names
 document.getElementById('root').value = 0;
-document.getElementById('scale-family').value = 'major';
-populateScaleModeSelect();
-document.getElementById('scale').value = 'ionian';
+document.getElementById('note-count').value = 'hepta';
+populateCollectionSelect();
+document.getElementById('collection').value = 'hepta_major';
+populateModeSelect();
+document.getElementById('mode').value = '0';
 document.getElementById('display').value = 'letters';
 
 // --- Position system ---
 
-function getParentScaleInfo(scaleKey, root) {
-  if (scaleKey === 'chromatic') return null;
-
-  // Find which family contains this scale
-  let familyEntry = null;
-  for (const entry of SCALE_FAMILIES) {
-    if (entry[2].some(([key]) => key === scaleKey)) {
-      familyEntry = entry;
-      break;
-    }
-  }
-  if (!familyEntry) return null;
-
-  const parentKey = familyEntry[2][0][0]; // first mode is the parent
-  const parentIntervals = SCALES[parentKey];
-  const modeIntervals = SCALES[scaleKey];
-
-  // Algorithmically find degree offset: find d such that rotating the parent
-  // by parentIntervals[d] yields the same pitch-class set as the mode
-  const parentSet = new Set(parentIntervals);
-  let degreeIndex = 0;
-  for (let d = 0; d < parentIntervals.length; d++) {
-    const offset = parentIntervals[d];
-    const rotated = new Set(modeIntervals.map(i => (i + offset) % 12));
-    if (rotated.size === parentSet.size && [...rotated].every(v => parentSet.has(v))) {
-      degreeIndex = d;
-      break;
-    }
-  }
-
-  const parentRoot = (root - parentIntervals[degreeIndex] + 12) % 12;
-  return { parentRoot, parentIntervals, degreeIndex };
+function getParentScaleInfo(collection, degreeIndex, root) {
+  if (collection.noteCount === 'chromatic') return null;
+  const parentRoot = (root - collection.intervals[degreeIndex] + 12) % 12;
+  return { parentRoot, parentIntervals: collection.intervals, degreeIndex };
 }
 
 function allPitchClassesCovered(startFret, width, scaleIntervals, root, tunings) {
@@ -349,12 +403,12 @@ function allPitchClassesCovered(startFret, width, scaleIntervals, root, tunings)
   return true;
 }
 
-function computePositions(scaleKey, root, tunings) {
-  const info = getParentScaleInfo(scaleKey, root);
+function computePositions(collection, degreeIndex, root, tunings) {
+  const info = getParentScaleInfo(collection, degreeIndex, root);
   if (!info) return [];
 
   const { parentRoot, parentIntervals } = info;
-  const scaleIntervals = SCALES[scaleKey];
+  const scaleIntervals = getModeIntervals(collection.intervals, degreeIndex);
   const refTuning = tunings[0]; // lowest-pitched string
   const positions = [];
 
@@ -396,7 +450,7 @@ function isNoteInPosition(fret, position) {
 
 function populatePositionSelect() {
   const sel = document.getElementById('position');
-  const scaleKey = document.getElementById('scale').value;
+  const { collection, degreeIndex } = getCurrentSelection();
   const root = parseInt(document.getElementById('root').value);
   const prevValue = sel.value;
 
@@ -406,16 +460,16 @@ function populatePositionSelect() {
   allOpt.textContent = 'All';
   sel.appendChild(allOpt);
 
-  if (scaleKey === 'chromatic') {
+  if (!collection || collection.noteCount === 'chromatic') {
     sel.disabled = true;
     selectedPosition = null;
     return;
   }
 
   sel.disabled = quizActive;
-  const positions = computePositions(scaleKey, root, currentTunings);
+  const positions = computePositions(collection, degreeIndex, root, currentTunings);
   const names = getNoteNames();
-  const info = getParentScaleInfo(scaleKey, root);
+  const info = getParentScaleInfo(collection, degreeIndex, root);
 
   positions.forEach(pos => {
     const anchorPitch = (info.parentRoot + info.parentIntervals[pos.degree - 1]) % 12;
@@ -437,18 +491,20 @@ function populatePositionSelect() {
 // --- Rendering ---
 
 function render() {
+  const { collection, degreeIndex } = getCurrentSelection();
+  if (!collection) return;
+
   const root = parseInt(document.getElementById('root').value);
-  const scaleKey = document.getElementById('scale').value;
   const displayMode = document.getElementById('display').value;
-  const scaleIntervals = SCALES[scaleKey];
+  const scaleIntervals = getModeIntervals(collection.intervals, degreeIndex);
   const names = getNoteNames();
 
   populatePositionSelect();
 
   // Compute active position once for the entire render
   let activePos = null;
-  if (selectedPosition !== null && scaleKey !== 'chromatic') {
-    const positions = computePositions(scaleKey, root, currentTunings);
+  if (selectedPosition !== null && collection.noteCount !== 'chromatic') {
+    const positions = computePositions(collection, degreeIndex, root, currentTunings);
     activePos = positions.find(p => p.degree === selectedPosition) || null;
   }
 
@@ -503,7 +559,7 @@ function render() {
       } else if (inScale) {
         noteDiv.classList.add('in-scale');
         if (outOfPosition) noteDiv.classList.add('out-of-position');
-      } else if (scaleKey !== 'chromatic') {
+      } else if (collection.noteCount !== 'chromatic') {
         noteDiv.classList.add('hidden');
       }
 
@@ -559,7 +615,7 @@ accidentalBtn.addEventListener('click', () => {
 
 // --- Event listeners ---
 
-['root', 'scale', 'display'].forEach(id => {
+['root', 'mode', 'display'].forEach(id => {
   document.getElementById(id).addEventListener('change', render);
 });
 
@@ -573,69 +629,68 @@ document.getElementById('preset').addEventListener('change', onPresetChange);
 
 // --- Quiz / Randomizer ---
 
-// Initialize quizSelectedModes now that SCALE_FAMILIES is defined
-quizSelectedModes = new Set(
-  SCALE_FAMILIES
-    .filter(([key]) => key === 'harmonic_major')
-    .flatMap(([, , modes]) => modes.map(([modeKey]) => modeKey))
-);
+// Default: select Harmonic Major collection for quiz
+quizSelectedCollections = new Set(['hepta_harm_maj']);
 
 function buildQuizModeDropdown() {
   const container = document.getElementById('quiz-mode-dropdown');
   container.innerHTML = '';
 
-  SCALE_FAMILIES.forEach(([familyKey, familyLabel, modes]) => {
-    if (familyKey === 'chromatic') return;
+  NOTE_COUNTS.forEach(nc => {
+    if (nc.key === 'chromatic') return;
 
-    // Family header row
-    const familyRow = document.createElement('div');
-    familyRow.className = 'quiz-mode-family';
-    const familyLbl = document.createElement('label');
-    const familyCb = document.createElement('input');
-    familyCb.type = 'checkbox';
-    familyCb.dataset.family = familyKey;
-    familyLbl.appendChild(familyCb);
-    familyLbl.appendChild(document.createTextNode(familyLabel));
-    familyRow.appendChild(familyLbl);
-    container.appendChild(familyRow);
+    const collectionsInGroup = COLLECTIONS.filter(c => c.noteCount === nc.key);
+    if (collectionsInGroup.length === 0) return;
 
-    // Mode rows
-    const modeCbs = [];
-    modes.forEach(([modeKey, modeLabel]) => {
-      const modeRow = document.createElement('div');
-      modeRow.className = 'quiz-mode-item';
-      const modeLbl = document.createElement('label');
-      const modeCb = document.createElement('input');
-      modeCb.type = 'checkbox';
-      modeCb.value = modeKey;
-      modeCb.checked = quizSelectedModes.has(modeKey);
-      modeCb.addEventListener('change', () => {
-        if (modeCb.checked) quizSelectedModes.add(modeKey);
-        else quizSelectedModes.delete(modeKey);
-        updateFamilyCheckbox(familyCb, modeCbs);
+    // Note-count header row (acts as select-all toggle)
+    const groupRow = document.createElement('div');
+    groupRow.className = 'quiz-mode-family';
+    const groupLbl = document.createElement('label');
+    const groupCb = document.createElement('input');
+    groupCb.type = 'checkbox';
+    groupCb.dataset.noteCount = nc.key;
+    groupLbl.appendChild(groupCb);
+    groupLbl.appendChild(document.createTextNode(nc.label));
+    groupRow.appendChild(groupLbl);
+    container.appendChild(groupRow);
+
+    const collCbs = [];
+
+    collectionsInGroup.forEach(coll => {
+      const collRow = document.createElement('div');
+      collRow.className = 'quiz-mode-item';
+      const collLbl = document.createElement('label');
+      const collCb = document.createElement('input');
+      collCb.type = 'checkbox';
+      collCb.value = coll.key;
+      collCb.checked = quizSelectedCollections.has(coll.key);
+      collCb.addEventListener('change', () => {
+        if (collCb.checked) quizSelectedCollections.add(coll.key);
+        else quizSelectedCollections.delete(coll.key);
+        updateFamilyCheckbox(groupCb, collCbs);
         updateQuizModeBtn();
       });
-      modeLbl.appendChild(modeCb);
-      modeLbl.appendChild(document.createTextNode(modeLabel));
-      modeRow.appendChild(modeLbl);
-      container.appendChild(modeRow);
-      modeCbs.push(modeCb);
+      collLbl.appendChild(collCb);
+      collLbl.appendChild(document.createTextNode(coll.label));
+      collRow.appendChild(collLbl);
+      container.appendChild(collRow);
+      collCbs.push(collCb);
     });
 
-    // Family checkbox toggles all its modes
-    familyCb.addEventListener('change', () => {
-      const checked = familyCb.checked;
-      modeCbs.forEach(cb => {
+    // Group checkbox toggles all its collections
+    groupCb.addEventListener('change', () => {
+      const checked = groupCb.checked;
+      collCbs.forEach(cb => {
         cb.checked = checked;
-        if (checked) quizSelectedModes.add(cb.value);
-        else quizSelectedModes.delete(cb.value);
+        if (checked) quizSelectedCollections.add(cb.value);
+        else quizSelectedCollections.delete(cb.value);
       });
-      familyCb.indeterminate = false;
+      groupCb.indeterminate = false;
       updateQuizModeBtn();
     });
 
-    // Set initial family checkbox state
-    updateFamilyCheckbox(familyCb, modeCbs);
+    // Set initial group checkbox state
+    updateFamilyCheckbox(groupCb, collCbs);
   });
 
   updateQuizModeBtn();
@@ -649,8 +704,8 @@ function updateFamilyCheckbox(familyCb, modeCbs) {
 
 function updateQuizModeBtn() {
   const btn = document.getElementById('quiz-mode-btn');
-  btn.textContent = `Modes (${quizSelectedModes.size} selected)`;
-  document.getElementById('quiz-randomize').disabled = quizSelectedModes.size === 0;
+  btn.textContent = `Scales (${quizSelectedCollections.size} selected)`;
+  document.getElementById('quiz-randomize').disabled = quizSelectedCollections.size === 0;
 }
 
 function toggleQuizDropdown() {
@@ -665,28 +720,32 @@ function closeQuizDropdown(e) {
 }
 
 function randomizeQuiz() {
-  // Build pool from individually selected modes
+  // Build pool: for each selected collection, include all its modes
   const pool = [];
-  SCALE_FAMILIES.forEach(([familyKey, , modes]) => {
-    modes.forEach(([modeKey]) => {
-      if (quizSelectedModes.has(modeKey)) {
-        pool.push({ familyKey, modeKey });
-      }
-    });
+  COLLECTIONS.forEach(coll => {
+    if (quizSelectedCollections.has(coll.key)) {
+      coll.modes.forEach((m, modeIdx) => {
+        pool.push({ collectionKey: coll.key, noteCount: coll.noteCount, modeIdx });
+      });
+    }
   });
   if (pool.length === 0) return;
 
   // Pick random root and mode
   const rootVal = Math.floor(Math.random() * 12);
   const pick = pool[Math.floor(Math.random() * pool.length)];
+  const collection = COLLECTIONS.find(c => c.key === pick.collectionKey);
 
-  // Set dropdown values
+  // Set dropdown values via cascade
   document.getElementById('root').value = rootVal;
-  document.getElementById('scale-family').value = pick.familyKey;
-  populateScaleModeSelect();
-  document.getElementById('scale').value = pick.modeKey;
-  // Randomize position (exclude "All") if any valid positions exist
-  const positions = computePositions(pick.modeKey, rootVal, currentTunings);
+  document.getElementById('note-count').value = pick.noteCount;
+  populateCollectionSelect();
+  document.getElementById('collection').value = pick.collectionKey;
+  populateModeSelect();
+  document.getElementById('mode').value = pick.modeIdx;
+
+  // Randomize position
+  const positions = computePositions(collection, pick.modeIdx, rootVal, currentTunings);
   if (positions.length > 0) {
     const chosen = positions[Math.floor(Math.random() * positions.length)];
     document.getElementById('position').value = chosen.degree;
@@ -714,7 +773,7 @@ function applyQuizState() {
   document.getElementById('quiz-show').disabled = !quizActive;
 
   // Disable/enable dropdowns to prevent peeking
-  ['root', 'scale-family', 'scale', 'display', 'position'].forEach(id => {
+  ['root', 'note-count', 'collection', 'mode', 'display', 'position'].forEach(id => {
     document.getElementById(id).disabled = quizActive;
   });
 }

@@ -391,11 +391,11 @@ h1 {
 
 /* Subtle glow for focused notes when a position is active */
 .fretboard-wrapper.position-focus .fret-cell:not(.out-of-position-cell) .note.in-scale {
-  box-shadow: 0 0 9px rgba(255, 255, 255, 0.3), 0 0 18px rgba(94, 103, 129, 0.45);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.25), 0 0 16px rgba(94, 103, 129, 0.4);
 }
 
 .fretboard-wrapper.position-focus .fret-cell:not(.out-of-position-cell) .note.is-root {
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.35), 0 0 18px rgba(200, 124, 104, 0.6);
+  box-shadow: 0 0 9px rgba(255, 255, 255, 0.3), 0 0 16px rgba(200, 124, 104, 0.55);
 }
 
 /* Fret markers (dots) */
