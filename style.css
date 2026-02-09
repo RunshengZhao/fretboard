@@ -81,8 +81,10 @@ body {
 }
 
 h1 {
-  font-size: 1.4rem;
-  letter-spacing: 0.05em;
+  font-size: 1.1rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 /* --- Theme toggle button --- */
