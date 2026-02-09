@@ -11,3 +11,6 @@ add 4-note-universe as well...
 
 # update
 triad mode labels now shown as scale degrees (e.g. 1-3-5, 1-3-♯5, etc.) instead of inversion names.
+
+# Future function?
+Intervalic Practice generator?

@@ -322,6 +322,9 @@ h1 {
 
 .quiz-mode-family {
   padding: 0.3rem 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .quiz-mode-family label {
@@ -330,11 +333,67 @@ h1 {
 }
 
 .quiz-mode-item {
-  padding: 0.2rem 0.6rem 0.2rem 1.4rem;
+  padding: 0.2rem 0.6rem 0.2rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .quiz-mode-item label {
   font-size: 0.78rem;
+}
+
+.quiz-mode-collection-header {
+  padding-left: 1.0rem;
+}
+
+.quiz-mode-subitem {
+  padding: 0.2rem 0.6rem 0.2rem 2.5rem;
+}
+
+.quiz-mode-subitem label {
+  font-size: 0.74rem;
+}
+
+.quiz-mode-group-body {
+  padding-bottom: 0.2rem;
+}
+
+.quiz-mode-group.collapsed .quiz-mode-group-body {
+  display: none;
+}
+
+.quiz-mode-collection.collapsed .quiz-mode-modes {
+  display: none;
+}
+
+.quiz-toggle {
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.quiz-toggle:hover {
+  opacity: 1;
+}
+
+.quiz-toggle::before {
+  content: "▸";
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.quiz-toggle[aria-expanded="true"]::before {
+  content: "▾";
 }
 
 .quiz-mode-dropdown label {

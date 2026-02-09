@@ -47,7 +47,7 @@ Positions divide the fretboard into playable regions (typically 4–5 fret spans
 
 ### Quiz Mode
 
-Randomize picks a random root + collection + mode from `quizSelectedCollections` (a `Set` of collection keys). While `quizActive`, the fretboard is CSS-hidden and all dropdowns are disabled. "Show Answer" reveals it. The quiz mode picker is a custom dropdown with per-note-count group headers (with indeterminate state) and per-collection checkboxes.
+Randomize picks a random root + mode from `quizSelectedModes` (a `Set` of `"collectionKey::modeIdx"` strings, constructed via `modeKey()`). While `quizActive`, the fretboard is CSS-hidden and all dropdowns are disabled. "Show Answer" reveals it. The quiz also randomizes a position. The quiz mode picker is a custom dropdown with 3-level checkboxes: note-count group headers → collection headers → individual mode checkboxes, all with indeterminate state propagation.
 
 ### Theming
 

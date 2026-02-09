@@ -2,7 +2,7 @@ const NOTE_NAMES_SHARP = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯
 const NOTE_NAMES_FLAT  = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
 let accidentalMode = 'sharp';
 let quizActive = false;
-let quizSelectedCollections; // initialized after COLLECTIONS is defined
+let quizSelectedModes; // initialized after COLLECTIONS is defined
 let selectedPosition = null; // null = show all, or 1..N for a specific position
 const INTERVAL_NAMES = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
 const TOTAL_FRETS = 22;
@@ -629,8 +629,18 @@ document.getElementById('preset').addEventListener('change', onPresetChange);
 
 // --- Quiz / Randomizer ---
 
-// Default: select Harmonic Major collection for quiz
-quizSelectedCollections = new Set(['hepta_harm_maj']);
+function modeKey(collectionKey, modeIdx) {
+  return `${collectionKey}::${modeIdx}`;
+}
+
+// Default: select all modes of Harmonic Major for quiz
+quizSelectedModes = new Set();
+const defaultColl = COLLECTIONS.find(c => c.key === 'hepta_harm_maj');
+if (defaultColl) {
+  defaultColl.modes.forEach((_, idx) => {
+    quizSelectedModes.add(modeKey(defaultColl.key, idx));
+  });
+}
 
 function buildQuizModeDropdown() {
   const container = document.getElementById('quiz-mode-dropdown');
@@ -643,69 +653,173 @@ function buildQuizModeDropdown() {
     if (collectionsInGroup.length === 0) return;
 
     // Note-count header row (acts as select-all toggle)
+    const group = document.createElement('div');
+    group.className = 'quiz-mode-group';
     const groupRow = document.createElement('div');
     groupRow.className = 'quiz-mode-family';
+
+    const groupToggle = document.createElement('button');
+    groupToggle.type = 'button';
+    groupToggle.className = 'quiz-toggle';
+    groupToggle.setAttribute('aria-expanded', 'true');
+    groupToggle.setAttribute('aria-label', `Toggle ${nc.label}`);
+    groupToggle.addEventListener('click', () => {
+      const isCollapsed = group.classList.toggle('collapsed');
+      groupToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    });
+
     const groupLbl = document.createElement('label');
     const groupCb = document.createElement('input');
     groupCb.type = 'checkbox';
     groupCb.dataset.noteCount = nc.key;
     groupLbl.appendChild(groupCb);
     groupLbl.appendChild(document.createTextNode(nc.label));
+    groupRow.appendChild(groupToggle);
     groupRow.appendChild(groupLbl);
-    container.appendChild(groupRow);
 
-    const collCbs = [];
+    const groupBody = document.createElement('div');
+    groupBody.className = 'quiz-mode-group-body';
+
+    group.appendChild(groupRow);
+    group.appendChild(groupBody);
+    container.appendChild(group);
+
+    const groupModeCbs = [];
+    const groupCollections = [];
+    let groupHasSelection = false;
 
     collectionsInGroup.forEach(coll => {
+      const collectionWrap = document.createElement('div');
+      collectionWrap.className = 'quiz-mode-collection';
+
       const collRow = document.createElement('div');
-      collRow.className = 'quiz-mode-item';
+      collRow.className = 'quiz-mode-item quiz-mode-collection-header';
+
+      const collToggle = document.createElement('button');
+      collToggle.type = 'button';
+      collToggle.className = 'quiz-toggle';
+      collToggle.setAttribute('aria-expanded', 'true');
+      collToggle.setAttribute('aria-label', `Toggle ${coll.label} modes`);
+      collToggle.addEventListener('click', () => {
+        const isCollapsed = collectionWrap.classList.toggle('collapsed');
+        collToggle.setAttribute('aria-expanded', String(!isCollapsed));
+      });
+
       const collLbl = document.createElement('label');
       const collCb = document.createElement('input');
       collCb.type = 'checkbox';
       collCb.value = coll.key;
-      collCb.checked = quizSelectedCollections.has(coll.key);
+
+      const modeRows = document.createElement('div');
+      modeRows.className = 'quiz-mode-modes';
+
+      const modeCbs = [];
+      coll.modes.forEach((m, modeIdx) => {
+        const key = modeKey(coll.key, modeIdx);
+        if (quizSelectedModes.has(key)) groupHasSelection = true;
+        const modeRow = document.createElement('div');
+        modeRow.className = 'quiz-mode-subitem';
+        const modeLbl = document.createElement('label');
+        const modeCb = document.createElement('input');
+        modeCb.type = 'checkbox';
+        modeCb.value = key;
+        modeCb.checked = quizSelectedModes.has(key);
+        modeCb.addEventListener('change', () => {
+          if (modeCb.checked) quizSelectedModes.add(key);
+          else quizSelectedModes.delete(key);
+          updateCollectionCheckbox(collCb, modeCbs);
+          updateGroupCheckbox(groupCb, groupModeCbs);
+          updateQuizModeBtn();
+        });
+        modeLbl.appendChild(modeCb);
+        modeLbl.appendChild(document.createTextNode(m.label));
+        modeRow.appendChild(modeLbl);
+        modeCbs.push(modeCb);
+        groupModeCbs.push(modeCb);
+        modeRows.appendChild(modeRow);
+      });
+
       collCb.addEventListener('change', () => {
-        if (collCb.checked) quizSelectedCollections.add(coll.key);
-        else quizSelectedCollections.delete(coll.key);
-        updateFamilyCheckbox(groupCb, collCbs);
+        const checked = collCb.checked;
+        modeCbs.forEach(cb => {
+          cb.checked = checked;
+          if (checked) quizSelectedModes.add(cb.value);
+          else quizSelectedModes.delete(cb.value);
+        });
+        collCb.indeterminate = false;
+        updateGroupCheckbox(groupCb, groupModeCbs);
         updateQuizModeBtn();
       });
+
       collLbl.appendChild(collCb);
       collLbl.appendChild(document.createTextNode(coll.label));
+      collRow.appendChild(collToggle);
       collRow.appendChild(collLbl);
-      container.appendChild(collRow);
-      collCbs.push(collCb);
+
+      collectionWrap.appendChild(collRow);
+      collectionWrap.appendChild(modeRows);
+      groupBody.appendChild(collectionWrap);
+
+      updateCollectionCheckbox(collCb, modeCbs);
+      if (collCb.checked || collCb.indeterminate) {
+        collectionWrap.classList.remove('collapsed');
+        collToggle.setAttribute('aria-expanded', 'true');
+      } else {
+        collectionWrap.classList.add('collapsed');
+        collToggle.setAttribute('aria-expanded', 'false');
+      }
+
+      groupCollections.push({ collCb, modeCbs, collectionWrap, collToggle });
     });
 
-    // Group checkbox toggles all its collections
+    // Group checkbox toggles all its modes
     groupCb.addEventListener('change', () => {
       const checked = groupCb.checked;
-      collCbs.forEach(cb => {
+      groupModeCbs.forEach(cb => {
         cb.checked = checked;
-        if (checked) quizSelectedCollections.add(cb.value);
-        else quizSelectedCollections.delete(cb.value);
+        if (checked) quizSelectedModes.add(cb.value);
+        else quizSelectedModes.delete(cb.value);
+      });
+      groupCollections.forEach(({ collCb, modeCbs, collectionWrap, collToggle }) => {
+        updateCollectionCheckbox(collCb, modeCbs);
+        if (collCb.checked || collCb.indeterminate) {
+          collectionWrap.classList.remove('collapsed');
+          collToggle.setAttribute('aria-expanded', 'true');
+        } else {
+          collectionWrap.classList.add('collapsed');
+          collToggle.setAttribute('aria-expanded', 'false');
+        }
       });
       groupCb.indeterminate = false;
       updateQuizModeBtn();
     });
 
-    // Set initial group checkbox state
-    updateFamilyCheckbox(groupCb, collCbs);
+    updateGroupCheckbox(groupCb, groupModeCbs);
+    if (!groupHasSelection && !groupCb.checked && !groupCb.indeterminate) {
+      group.classList.add('collapsed');
+      groupToggle.setAttribute('aria-expanded', 'false');
+    }
   });
 
   updateQuizModeBtn();
 }
 
-function updateFamilyCheckbox(familyCb, modeCbs) {
+function updateCollectionCheckbox(collectionCb, modeCbs) {
   const checkedCount = modeCbs.filter(cb => cb.checked).length;
-  familyCb.checked = checkedCount === modeCbs.length;
-  familyCb.indeterminate = checkedCount > 0 && checkedCount < modeCbs.length;
+  collectionCb.checked = checkedCount === modeCbs.length;
+  collectionCb.indeterminate = checkedCount > 0 && checkedCount < modeCbs.length;
+}
+
+function updateGroupCheckbox(groupCb, modeCbs) {
+  const checkedCount = modeCbs.filter(cb => cb.checked).length;
+  groupCb.checked = checkedCount === modeCbs.length;
+  groupCb.indeterminate = checkedCount > 0 && checkedCount < modeCbs.length;
 }
 
 function updateQuizModeBtn() {
   const btn = document.getElementById('quiz-mode-btn');
-  btn.textContent = `Scales (${quizSelectedCollections.size} selected)`;
-  document.getElementById('quiz-randomize').disabled = quizSelectedCollections.size === 0;
+  btn.textContent = `Modes (${quizSelectedModes.size} selected)`;
+  document.getElementById('quiz-randomize').disabled = quizSelectedModes.size === 0;
 }
 
 function toggleQuizDropdown() {
@@ -720,14 +834,14 @@ function closeQuizDropdown(e) {
 }
 
 function randomizeQuiz() {
-  // Build pool: for each selected collection, include all its modes
+  // Build pool: only selected modes
   const pool = [];
   COLLECTIONS.forEach(coll => {
-    if (quizSelectedCollections.has(coll.key)) {
-      coll.modes.forEach((m, modeIdx) => {
+    coll.modes.forEach((m, modeIdx) => {
+      if (quizSelectedModes.has(modeKey(coll.key, modeIdx))) {
         pool.push({ collectionKey: coll.key, noteCount: coll.noteCount, modeIdx });
-      });
-    }
+      }
+    });
   });
   if (pool.length === 0) return;
 
