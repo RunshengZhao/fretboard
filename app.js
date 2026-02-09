@@ -819,7 +819,9 @@ function updateGroupCheckbox(groupCb, modeCbs) {
 function updateQuizModeBtn() {
   const btn = document.getElementById('quiz-mode-btn');
   btn.textContent = `Modes (${quizSelectedModes.size} selected)`;
-  document.getElementById('quiz-randomize').disabled = quizSelectedModes.size === 0;
+  const noModes = quizSelectedModes.size === 0;
+  document.getElementById('quiz-randomize').disabled = noModes;
+  document.getElementById('permutation-generate').disabled = noModes;
 }
 
 function toggleQuizDropdown() {
@@ -898,5 +900,207 @@ document.getElementById('quiz-mode-btn').addEventListener('click', toggleQuizDro
 document.addEventListener('click', closeQuizDropdown);
 document.getElementById('quiz-randomize').addEventListener('click', randomizeQuiz);
 document.getElementById('quiz-show').addEventListener('click', showQuizAnswer);
+
+// --- Scale Permutation ---
+
+let lastPermutationResult = null; // cached for display-mode re-render
+
+function getPositionNoteRange(scaleIntervals, root, tunings, position) {
+  // Compute cumulative pitch offsets for each string (to determine absolute ordering)
+  const offsets = [tunings[0]];
+  for (let s = 1; s < tunings.length; s++) {
+    offsets[s] = offsets[s - 1] + ((tunings[s] - tunings[s - 1] + 12) % 12);
+  }
+
+  const notes = [];
+  for (let s = 0; s < tunings.length; s++) {
+    for (const w of position.windows) {
+      for (let fret = w.start; fret <= w.end; fret++) {
+        const pitch = (tunings[s] + fret) % 12;
+        const interval = (pitch - root + 12) % 12;
+        const degreeInScale = scaleIntervals.indexOf(interval);
+        if (degreeInScale === -1) continue;
+        const absolutePitch = offsets[s] + fret;
+        notes.push({ absolutePitch, pitchClass: pitch, interval, degreeInScale });
+      }
+    }
+  }
+
+  // Sort by absolute pitch, deduplicate by absolutePitch
+  notes.sort((a, b) => a.absolutePitch - b.absolutePitch);
+  const unique = [];
+  let prev = -1;
+  for (const n of notes) {
+    if (n.absolutePitch !== prev) {
+      unique.push(n);
+      prev = n.absolutePitch;
+    }
+  }
+
+  // Assign sequential index and 1-based degree number (cycling 1..N across octaves)
+  for (let i = 0; i < unique.length; i++) {
+    unique[i].seqIndex = i;
+    unique[i].degreeNum = (unique[i].degreeInScale % scaleIntervals.length) + 1;
+  }
+
+  return unique;
+}
+
+function generateStepPattern(N) {
+  const maxStep = Math.min(6, N - 1);
+  const maxPatternLen = Math.min(4, N);
+  const maxNetMotion = Math.ceil(N / 2);
+
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const patternLength = 1 + Math.floor(Math.random() * maxPatternLen);
+
+    if (patternLength === 1) {
+      return [Math.random() < 0.5 ? 1 : -1];
+    }
+
+    const steps = [];
+    let valid = true;
+
+    for (let i = 0; i < patternLength; i++) {
+      // Build candidates: ±1..±maxStep, excluding 0
+      const candidates = [];
+      for (let s = 1; s <= maxStep; s++) {
+        candidates.push(s, -s);
+      }
+
+      // Filter out immediate inverse of previous step
+      const filtered = i === 0
+        ? candidates
+        : candidates.filter(c => c !== -steps[i - 1]);
+
+      if (filtered.length === 0) { valid = false; break; }
+      steps.push(filtered[Math.floor(Math.random() * filtered.length)]);
+    }
+
+    if (!valid) continue;
+
+    // Check cyclic inverse: last step and first step
+    if (steps[steps.length - 1] === -steps[0]) continue;
+
+    const netMotion = steps.reduce((sum, s) => sum + s, 0);
+    if (Math.abs(netMotion) > 0 && Math.abs(netMotion) <= maxNetMotion) {
+      return steps;
+    }
+  }
+
+  // Fallback
+  return [1];
+}
+
+function generatePermutationSequence(noteRange, pattern, N) {
+  const targetLength = 2 * N;
+  const netMotion = pattern.reduce((sum, s) => sum + s, 0);
+  const rangeLen = noteRange.length;
+
+  // Start at bottom for ascending, top for descending
+  let currentIdx = netMotion > 0 ? 0 : rangeLen - 1;
+  const sequence = [noteRange[currentIdx]];
+
+  let patternIdx = 0;
+  while (sequence.length < targetLength) {
+    currentIdx += pattern[patternIdx % pattern.length];
+    if (currentIdx < 0 || currentIdx >= rangeLen) break;
+    sequence.push(noteRange[currentIdx]);
+    patternIdx++;
+  }
+
+  return sequence;
+}
+
+function displayPermutation() {
+  // End quiz if active
+  if (quizActive) {
+    quizActive = false;
+    applyQuizState();
+  }
+
+  // Build pool from quizSelectedModes (same as quiz)
+  const pool = [];
+  COLLECTIONS.forEach(coll => {
+    coll.modes.forEach((m, modeIdx) => {
+      if (quizSelectedModes.has(modeKey(coll.key, modeIdx))) {
+        pool.push({ collectionKey: coll.key, noteCount: coll.noteCount, modeIdx });
+      }
+    });
+  });
+  if (pool.length === 0) return;
+
+  // Pick random root and mode
+  const rootVal = Math.floor(Math.random() * 12);
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  const collection = COLLECTIONS.find(c => c.key === pick.collectionKey);
+
+  // Set dropdown values via cascade
+  document.getElementById('root').value = rootVal;
+  document.getElementById('note-count').value = pick.noteCount;
+  populateCollectionSelect();
+  document.getElementById('collection').value = pick.collectionKey;
+  populateModeSelect();
+  document.getElementById('mode').value = pick.modeIdx;
+
+  // Randomize position
+  const positions = computePositions(collection, pick.modeIdx, rootVal, currentTunings);
+  if (positions.length === 0) {
+    document.getElementById('position').value = '';
+    selectedPosition = null;
+    render();
+    document.getElementById('permutation-output').innerHTML = '';
+    lastPermutationResult = null;
+    return;
+  }
+
+  const chosen = positions[Math.floor(Math.random() * positions.length)];
+  document.getElementById('position').value = chosen.degree;
+  selectedPosition = chosen.degree;
+  render();
+
+  // Compute note range in position
+  const scaleIntervals = getModeIntervals(collection.intervals, pick.modeIdx);
+  const N = scaleIntervals.length;
+  const noteRange = getPositionNoteRange(scaleIntervals, rootVal, currentTunings, chosen);
+
+  if (noteRange.length < 2) {
+    document.getElementById('permutation-output').innerHTML = '';
+    lastPermutationResult = null;
+    return;
+  }
+
+  // Generate step pattern and sequence
+  const pattern = generateStepPattern(N);
+  const sequence = generatePermutationSequence(noteRange, pattern, N);
+
+  lastPermutationResult = { sequence, pattern, root: rootVal };
+  renderPermutationOutput();
+}
+
+function renderPermutationOutput() {
+  if (!lastPermutationResult) return;
+  const { sequence, pattern, root } = lastPermutationResult;
+  const displayMode = document.getElementById('display').value;
+  const names = getNoteNames();
+
+  const noteTexts = sequence.map(note => {
+    if (displayMode === 'letters') return names[note.pitchClass];
+    if (displayMode === 'intervals') return INTERVAL_NAMES[note.interval];
+    return String(note.degreeNum); // 'none' → show degree numbers
+  });
+
+  const patternStr = pattern.map(s => (s > 0 ? '+' : '') + s).join(', ');
+
+  const output = document.getElementById('permutation-output');
+  output.innerHTML =
+    `<div class="permutation-pattern">Pattern: [${patternStr}]</div>` +
+    `<div class="permutation-notes">${noteTexts.join(' - ')}</div>`;
+}
+
+document.getElementById('permutation-generate').addEventListener('click', displayPermutation);
+
+// Re-render permutation text when display mode changes
+document.getElementById('display').addEventListener('change', renderPermutationOutput);
 
 render();
