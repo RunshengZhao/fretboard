@@ -49,27 +49,27 @@ const COLLECTIONS = [
   {
     key: 'triad_major', noteCount: 'triad', label: 'Major',
     intervals: [0, 4, 7],
-    modes: [{ label: 'Root Position' }, { label: '1st Inversion' }, { label: '2nd Inversion' }],
+    modes: [{ label: '1-3-5' }, { label: '1-♭3-♭6' }, { label: '1-4-6' }],
   },
   {
     key: 'triad_minor', noteCount: 'triad', label: 'Minor',
     intervals: [0, 3, 7],
-    modes: [{ label: 'Root Position' }, { label: '1st Inversion' }, { label: '2nd Inversion' }],
+    modes: [{ label: '1-♭3-5' }, { label: '1-3-6' }, { label: '1-4-♭6' }],
   },
   {
     key: 'triad_dim', noteCount: 'triad', label: 'Diminished',
     intervals: [0, 3, 6],
-    modes: [{ label: 'Root Position' }, { label: '1st Inversion' }, { label: '2nd Inversion' }],
+    modes: [{ label: '1-♭3-♭5' }, { label: '1-♭3-6' }, { label: '1-♭5-6' }],
   },
   {
     key: 'triad_aug', noteCount: 'triad', label: 'Augmented',
     intervals: [0, 4, 8],
-    modes: [{ label: 'Root Position' }], // all inversions identical due to symmetry
+    modes: [{ label: '1-3-♯5' }], // all inversions identical due to symmetry
   },
   {
     key: 'triad_sus', noteCount: 'triad', label: 'Sus',
     intervals: [0, 2, 7],
-    modes: [{ label: 'Sus2' }, { label: 'Mode 2' }, { label: 'Sus4' }],
+    modes: [{ label: '1-2-5' }, { label: '1-4-♭7' }, { label: '1-4-5' }],
   },
 
   // Pentatonic
