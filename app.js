@@ -957,28 +957,13 @@ function generateStepPattern(N) {
     }
 
     const steps = [];
-    let valid = true;
-
     for (let i = 0; i < patternLength; i++) {
-      // Build candidates: ±1..±maxStep, excluding 0
       const candidates = [];
       for (let s = 1; s <= maxStep; s++) {
         candidates.push(s, -s);
       }
-
-      // Filter out immediate inverse of previous step
-      const filtered = i === 0
-        ? candidates
-        : candidates.filter(c => c !== -steps[i - 1]);
-
-      if (filtered.length === 0) { valid = false; break; }
-      steps.push(filtered[Math.floor(Math.random() * filtered.length)]);
+      steps.push(candidates[Math.floor(Math.random() * candidates.length)]);
     }
-
-    if (!valid) continue;
-
-    // Check cyclic inverse: last step and first step
-    if (steps[steps.length - 1] === -steps[0]) continue;
 
     // Reject all-identical steps (e.g. [+1,+1] is just [+1])
     if (steps.every(s => s === steps[0])) continue;
@@ -1042,17 +1027,6 @@ function validatePattern(steps, N) {
     rule: `Net motion (|${netMotion}| ≤ ${maxNetMotion}, ≠ 0)`,
     passed: Math.abs(netMotion) > 0 && Math.abs(netMotion) <= maxNetMotion,
     detail: `Sum of steps = ${netMotion}`,
-  });
-
-  let hasInverse = false;
-  for (let i = 1; i < steps.length; i++) {
-    if (steps[i] === -steps[i - 1]) { hasInverse = true; break; }
-  }
-  if (steps.length > 1 && steps[0] === -steps[steps.length - 1]) hasInverse = true;
-  rules.push({
-    rule: 'No immediate inverses',
-    passed: !hasInverse,
-    detail: 'No +k followed by -k (including cyclic)',
   });
 
   rules.push({

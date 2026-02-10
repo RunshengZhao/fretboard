@@ -14,7 +14,6 @@ A step pattern is a short array of signed integers (e.g., `[+1, +3, -1]`) that r
 | Single-step restriction | If pattern length is 1, only +1 or -1 |
 | Pattern length | 1 to min(3, N) steps |
 | Net motion | 0 < \|sum of steps\| ≤ 2 |
-| No immediate inverses | +k cannot be followed by -k (also checked cyclically between last and first step) |
 | Not all identical | Multi-step patterns must have at least 2 distinct values (e.g., `[+1,+1]` is rejected — it's just `[+1]`) |
 
 Generation retries up to 100 times to find a valid pattern; falls back to `[+1]`.
@@ -63,15 +62,14 @@ Users can type their own step pattern (e.g., `[+2,-1]`) in the input box and cli
 The input is stripped of brackets, split by commas, and each token parsed as an integer. Invalid formats (non-numbers, empty input) show a parse error.
 
 ### Validation
-The custom pattern is checked against all 7 rules listed above. A checklist is displayed showing ✓ or ✗ for each rule:
+The custom pattern is checked against all 6 rules listed above. A checklist is displayed showing ✓ or ✗ for each rule:
 
 1. No zeros
-2. Step range (±1..±min(3, N-1))
+2. Step range (±1..±min(5, N-1))
 3. Single-step restriction (length-1 must be ±1)
-4. Pattern length (1..min(3, N))
+4. Pattern length (1..min(4, N))
 5. Net motion (0 < |sum| ≤ 2)
-6. No immediate inverses (including cyclic)
-7. Not all identical
+6. Not all identical
 
 If all rules pass, the system randomizes root/mode/position and generates the sequence using the custom pattern. If any rule fails, only the checklist is shown so the user can see what to fix.
 
