@@ -66,3 +66,6 @@ Three options: "None" (no labels), "Letter Names" (pitch classes via `NOTE_NAMES
 - `populateCollectionSelect()` — collection dropdown (on note count change)
 - `populateModeSelect()` — mode dropdown (on collection change)
 - `onPresetChange()` — applies preset tuning to `currentTunings`
+
+### Update the scalePermutation function
+Update the scalePermutation function in scalePermutationRules.md whenever makes a change to this function so the coder can keep a track of what's going on with this function.

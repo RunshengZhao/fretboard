@@ -1,113 +1,90 @@
-Add a function to generate a set of music notes (which can switch between Letter Names or Scale Degree numbers, based on user choice).
-The external modes are selected via the modes selector dropdown menu.
-The internal rule for generating sequences is as follows:
-	1.	Notes are treated as elements of an ordered cyclic list (the scale).
-	2.	Step offsets are signed integers:
-	    •	Allowed range: ±1 … ±min(6, N-1) (excluding 0)
-	    •	Single-step patterns are only allowed for ±1
-	3.	Pattern length: 1–min(4, N) steps
-	4.	Net motion (sum of steps) must satisfy: 0 < |netMotion| ≤ ceil(N/2)
-	5.	Immediate inverse steps (e.g., +k, −k) are disallowed
-	6.	Output sequence length: 2 × N notes, or until range boundary is reached
+# Scale Permutation Randomizer
 
-Users can click a button called “Scale Permutation” to generate a sequence of music notes according to these rules.
-The function should:
-	•	Dynamically generate a valid step-pattern sequence according to the rules above (no pre-stored pattern arrays needed)
-	•	Map the sequence to the selected mode and Letter Name / Scale Degree view
-	•	Return the generated sequence as text for display
+## What It Does
+
+Clicking "Scale Permutation" randomly picks a root note, mode (from the quiz mode picker pool), and fretboard position, then generates a note sequence by walking through the scale using a repeating step pattern. The fretboard updates to show the chosen position (visible, not hidden like quiz).
+
+## Step Pattern Rules
+
+A step pattern is a short array of signed integers (e.g., `[+1, +3, -1]`) that repeats cyclically to produce the note sequence. Given a scale with **N** notes:
+
+| Rule | Constraint |
+|------|-----------|
+| Step range | ±1 to ±min(3, N-1), excluding 0 |
+| Single-step restriction | If pattern length is 1, only +1 or -1 |
+| Pattern length | 1 to min(3, N) steps |
+| Net motion | 0 < \|sum of steps\| ≤ 2 |
+| No immediate inverses | +k cannot be followed by -k (also checked cyclically between last and first step) |
+| Not all identical | Multi-step patterns must have at least 2 distinct values (e.g., `[+1,+1]` is rejected — it's just `[+1]`) |
+
+Generation retries up to 100 times to find a valid pattern; falls back to `[+1]`.
+
+## Note Range
+
+The playable range comes from the chosen position:
+
+1. Compute cumulative pitch offsets per string to establish absolute pitch ordering
+2. Use only the **first window** (lowest fret range) of the position — positions can repeat every 12 frets, but the sequence should stay in one physical region, not span octave-apart duplicates
+3. Collect all in-scale notes across every string within that window
+4. Sort by absolute pitch, remove duplicates
+5. This ordered list is the range the step pattern navigates (index 0 = lowest, last index = highest)
+
+Each note carries: pitch class, interval from root, cycling degree number (1 through N), and string number (①–⑧).
+
+## Sequence Generation
+
+1. Compute the pattern's **max upward excursion** and **max downward excursion** from one cycle of prefix sums — this determines how far intermediate steps stray from the net direction
+2. Starting point: offset from the edge to leave room for intermediate steps:
+   - Ascending (net motion > 0): start at `max(0, -minExcursion)` so downward dips don't go below index 0
+   - Descending (net motion < 0): start at `min(last, last - maxExcursion)` so upward peaks don't exceed the range
+3. Goal note: highest note in range for ascending, lowest for descending
+4. Apply the step pattern cyclically — each step moves by that many positions in the ordered note list
+5. Stop when the goal note is reached, or if the next step would go out of bounds
+
+## Display
+
+Output format follows the existing Display dropdown:
+
+| Setting | Shows |
+|---------|-------|
+| Letter Names | Note names (C, D, E...), respects sharp/flat toggle |
+| Intervals | Interval names relative to root (1, ♭3, 5...) |
+| None | Scale degree numbers (1 through N, cycling across octaves) |
+
+Each note includes a string indicator using circled numbers (e.g., `C(⑥) - D(⑤)`), showing which guitar string the note is on (① = highest string).
+
+The pattern is shown above the notes (e.g., "Pattern: [+1, +3, -1]"). Changing the Display dropdown or the sharp/flat toggle re-renders the last generated sequence without regenerating.
+
+## Custom Pattern Input
+
+Users can type their own step pattern (e.g., `[+2,-1]`) in the input box and click "Use Pattern" (or press Enter).
+
+### Parsing
+The input is stripped of brackets, split by commas, and each token parsed as an integer. Invalid formats (non-numbers, empty input) show a parse error.
+
+### Validation
+The custom pattern is checked against all 7 rules listed above. A checklist is displayed showing ✓ or ✗ for each rule:
+
+1. No zeros
+2. Step range (±1..±min(3, N-1))
+3. Single-step restriction (length-1 must be ±1)
+4. Pattern length (1..min(3, N))
+5. Net motion (0 < |sum| ≤ 2)
+6. No immediate inverses (including cyclic)
+7. Not all identical
+
+If all rules pass, the system randomizes root/mode/position and generates the sequence using the custom pattern. If any rule fails, only the checklist is shown so the user can see what to fix.
+
+# Curated pattern.
+## 2nd
+[+1]
+[-1]
+## 3rd
+[+2,-1]: ascending in 3rds, /up,up,
+[-2,+1]: descending in 3rds/down,down
+[-2,+3]: down a 3rd, up a 4th./down,up
+[+2, -1, -2, -1]: up a 3rd, up a 3rd, step down, down a 3rd, step down/up,down
 
 
-# the Algorithm
-Algorithm (app.js)
-
- Step 1: Randomize (reuse quiz pattern from randomizeQuiz())
-
- - Build pool from quizSelectedModes (same as quiz)
- - Pick random root + mode
- - Set dropdown values via cascade (same as quiz lines 854-859)
- - Pick random position (same as quiz lines 862-870)
- - Call render() to update fretboard (showing the position, NOT hidden like quiz)
-
- Step 2: Compute position note range
-
- New helper getPositionNoteRange(scaleIntervals, root, tunings, position):
- 1. Compute absolute pitch offsets for each string: offsets[0] = tunings[0], then
- offsets[s] = offsets[s-1] + (tunings[s] - tunings[s-1] + 12) % 12
- 2. For each string, for each fret in the position window, if the note is in the
- scale:
-   - Compute absolute pitch: offsets[s] + fret
-   - Compute degree index within scale: scaleIntervals.indexOf(interval)
-   - Store as { absolutePitch, degreeInScale }
- 3. Sort by absolute pitch, deduplicate
- 4. Return ordered array — this is the playable sequence of scale notes within the
- position
- 5. Also compute a sequential "degree index" for each (0, 1, 2, ...) — these are
- what the step pattern navigates
-
- Step 3: Generate step pattern
-
- generateStepPattern(N) where N = scale note count:
- 1. maxStep = min(6, N - 1)
- 2. patternLength = random(1, min(4, N))
- 3. If patternLength === 1: return [+1] or [-1]
- 4. For multi-step: pick random steps from ±1..±maxStep, no immediate inverses
- (including cyclic: last→first)
- 5. Validate: 0 < |sum(steps)| ≤ ceil(N / 2)
- 6. Retry if invalid (max 100 attempts, fallback to [+1])
-
- Step 4: Generate note sequence
-
- generatePermutationSequence(noteRange, pattern):
- 1. targetLength = 2 * N (N = number of notes in the scale)
- 2. Start position: if net motion > 0, start at index 0 (bottom of range); if < 0,
- start at last index
- 3. Walk through noteRange indices using pattern cyclically
- 4. Stop at targetLength notes or when index goes out of bounds (0 to
- noteRange.length - 1)
- 5. Return array of notes from noteRange
-
- Step 5: Display
-
- displayPermutation():
- 1. Do randomization (Step 1)
- 2. Read display mode from #display dropdown
- 3. Map sequence notes to text:
-   - 'letters': getNoteNames()[note.pitchClass]
-   - 'intervals': INTERVAL_NAMES[note.interval]
-   - 'none': show scale degree numbers (1, 2, 3, ..., since there's no better
- default)
- 4. Also show the pattern (e.g., "Pattern: +1, +3, -1") and position info
- 5. Set #permutation-output textContent
-
- Event Wiring
-
- - #permutation-generate click → displayPermutation()
- - When #display changes and there's a cached permutation sequence → re-render the
- text
-
- Styling (style.css)
-
- .permutation-output {
-   text-align: center;
-   padding: 0.75rem 1rem;
-   font-family: monospace;
-   font-size: 0.95rem;
-   color: var(--text);
-   min-height: 0;
- }
- .permutation-output:empty {
-   display: none;
- }
-
- Verification
-
- - Open index.html in browser
- - Select modes in the quiz mode picker
- - Click "Scale Permutation" — should randomize root/mode/position, show fretboard
- with position, display note sequence as text
- - Change Display dropdown (Letters/Intervals/None) — sequence text should update
- format
- - Click again — should generate different sequence
- - Test with triads (N=3), pentatonic (N=5), heptatonic (N=7), octatonic (N=8)
- - Verify step pattern rules: no immediate inverses, valid net motion, correct
- range bounds
+## 4th
+[+3,-2]: ascending in 4th.

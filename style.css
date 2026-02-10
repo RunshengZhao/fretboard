@@ -484,6 +484,46 @@ h1 {
   letter-spacing: 0.03em;
 }
 
+#permutation-pattern-input {
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  width: 10rem;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+#permutation-custom {
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.permutation-rules {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1rem;
+  font-size: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.rule-pass {
+  color: #6cbf6c;
+}
+
+.rule-fail {
+  color: #e06060;
+}
+
 /* --- Fretboard --- */
 .fretboard-wrapper {
   overflow-x: auto;
