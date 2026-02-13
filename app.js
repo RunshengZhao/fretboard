@@ -27,7 +27,8 @@ let currentTunings = [...PRESETS.guitar_6.tuning]; // default 6-string
 
 const NOTE_COUNTS = [
   { key: 'chromatic', label: 'Chromatic' },
-  { key: 'triad',     label: 'Triad' },
+  { key: 'triad',     label: 'Tritonic' },
+  { key: 'tetra',     label: 'Tetratonic' },
   { key: 'penta',     label: 'Pentatonic' },
   { key: 'hexa',      label: 'Hexatonic' },
   { key: 'hepta',     label: 'Heptatonic' },
@@ -70,6 +71,53 @@ const COLLECTIONS = [
     key: 'triad_sus', noteCount: 'triad', label: 'Sus',
     intervals: [0, 2, 7],
     modes: [{ label: '1-2-5' }, { label: '1-4-♭7' }, { label: '1-4-5' }],
+  },
+
+  // Tetratonic
+  {
+    key: 'tetra_maj7', noteCount: 'tetra', label: '035-Maj7',
+    intervals: [0, 4, 7, 11],
+    modes: [{ label: '1-3-5-7' }, { label: '1-♭3-5-♭6' }, { label: '1-3-4-6' }, { label: '1-♭2-4-♭6' }],
+  },
+  {
+    key: 'tetra_maj7s5', noteCount: 'tetra', label: '036-Maj7(♯5)',
+    intervals: [0, 4, 8, 11],
+    modes: [{ label: '1-3-♯5-7' }, { label: '1-3-5-♭6' }, { label: '1-♭3-♭4-♭6' }, { label: '1-♭2-4-6' }],
+  },
+  {
+    key: 'tetra_dom7', noteCount: 'tetra', label: '037-Dom7',
+    intervals: [0, 4, 7, 10],
+    modes: [{ label: '1-3-5-♭7' }, { label: '1-♭3-♭5-♭6' }, { label: '1-♭3-4-6' }, { label: '1-2-♭5-6' }],
+  },
+  {
+    key: 'tetra_dom7s5', noteCount: 'tetra', label: '038-Dom7♯5',
+    intervals: [0, 4, 8, 10],
+    modes: [{ label: '1-3-♯5-♭7' }, { label: '1-3-♯4-♯5' }, { label: '1-2-3-♯5' }, { label: '1-2-♯4-♭7' }],
+  },
+  {
+    key: 'tetra_min7', noteCount: 'tetra', label: '039-Minor7',
+    intervals: [0, 3, 7, 10],
+    modes: [{ label: '1-♭3-5-♭7' }, { label: '1-3-5-6' }, { label: '1-♭3-4-♭6' }, { label: '1-2-4-6' }],
+  },
+  {
+    key: 'tetra_mmaj7', noteCount: 'tetra', label: '040-mMaj7',
+    intervals: [0, 3, 7, 11],
+    modes: [{ label: '1-♭3-5-7' }, { label: '1-3-♯5-6' }, { label: '1-3-4-♯5' }, { label: '1-♭2-3-♭6' }],
+  },
+  {
+    key: 'tetra_m7b5', noteCount: 'tetra', label: '041-m7(♭5)',
+    intervals: [0, 3, 6, 10],
+    modes: [{ label: '1-♭3-♭5-♭7' }, { label: '1-♭3-5-6' }, { label: '1-3-♭5-6' }, { label: '1-2-4-♭6' }],
+  },
+  {
+    key: 'tetra_dim7', noteCount: 'tetra', label: '042-Dim7',
+    intervals: [0, 3, 6, 9],
+    modes: [{ label: '1-♭3-♭5-6' }], // all inversions identical due to symmetry
+  },
+  {
+    key: 'tetra_dimmaj7', noteCount: 'tetra', label: '043-DimMaj7',
+    intervals: [0, 3, 6, 11],
+    modes: [{ label: '1-♭3-♭5-7' }, { label: '1-♭3-♭6-°7' }, { label: '1-4-♭5-6' }, { label: '1-♭2-3-5' }],
   },
 
   // Pentatonic
@@ -499,6 +547,14 @@ function render() {
   const scaleIntervals = getModeIntervals(collection.intervals, degreeIndex);
   const names = getNoteNames();
 
+  // Build interval label map from mode label (e.g. "1-3-♯5-7" → {0:'1', 4:'3', 8:'♯5', 11:'7'})
+  const modeLabel = collection.modes[degreeIndex]?.label || '';
+  const modeLabelParts = modeLabel.split('-');
+  const intervalLabelMap = {};
+  if (modeLabelParts.length === scaleIntervals.length) {
+    scaleIntervals.forEach((iv, idx) => { intervalLabelMap[iv] = modeLabelParts[idx]; });
+  }
+
   populatePositionSelect();
 
   // Compute active position once for the entire render
@@ -536,7 +592,7 @@ function render() {
       const label = displayMode === 'letters'
         ? names[pitch]
         : displayMode === 'intervals'
-        ? INTERVAL_NAMES[interval]
+        ? (intervalLabelMap[interval] || INTERVAL_NAMES[interval])
         : '';
 
       const cellDiv = document.createElement('div');
