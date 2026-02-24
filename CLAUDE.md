@@ -37,6 +37,22 @@ Cascade: `#note-count` change → `populateCollectionSelect()` → `populateMode
 
 When adding a new scale: add it to `COLLECTIONS` with the correct `noteCount` key and list its modes. If the note count is new, also add to `NOTE_COUNTS`.
 
+**Music theory constraints for scale data:**
+- Modes MUST be rotations of the SAME pitch-class set. Different interval structures (e.g., major triad `[0,4,7]` vs minor triad `[0,3,7]`) are separate collections, not modes of each other.
+- Symmetric scales have fewer distinct modes — omit duplicates (e.g., augmented triad has 1 mode, diminished 7th has 1, diminished octatonic has 2).
+- Sus2 and Sus4 are inversions of the same pitch set `[0,2,7]`, so they belong to one collection.
+- Minor Pentatonic is mode 5 of Major Pentatonic; Major Blues is mode 2 of Minor Blues.
+
+**Interval label display:** When display mode is "Intervals", the mode's label string (e.g., `"1-3-♯5-7"`) is split on `-` and mapped to scale intervals to produce custom degree labels. This means mode labels double as interval display data — they must use `-` delimited degree notation with the correct number of parts matching the collection's interval count.
+
+### Key Global State
+
+- `currentTunings` — array of pitch-class integers (0–11), indexed low-to-high string
+- `accidentalMode` — `'sharp'` or `'flat'`
+- `quizActive` — boolean, controls fretboard visibility and dropdown locking
+- `quizSelectedModes` — `Set` of `"collectionKey::modeIdx"` strings (constructed via `modeKey()`)
+- `selectedPosition` — `null` (show all) or integer (1..N) for active position
+
 ### Tuning Controls
 
 `buildTuningControls()` dynamically creates per-string `<select>` elements plus +/− buttons. String numbering is player-convention (String 1 = highest pitch = last array index). `clearPresetIfMismatch()` auto-deselects the preset when manual edits diverge. `currentTunings[0]` is the lowest-pitched string.
