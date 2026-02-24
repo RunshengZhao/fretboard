@@ -75,47 +75,87 @@ const COLLECTIONS = [
 
   // Tetratonic
   {
-    key: 'tetra_maj7', noteCount: 'tetra', label: '035-Maj7',
+    key: 'tetra_maj7add4', noteCount: 'tetra', group: 'Quartal', label: '027-Maj7add4',
+    intervals: [0, 4, 5, 11],
+    modes: [{ label: '1-3-4-7' }, { label: '1-♭2-5-♭6' }, { label: '1-♭5-5-7' }, { label: '1-♭2-4-♭5' }],
+  },
+  {
+    key: 'tetra_mmaj7add4', noteCount: 'tetra', group: 'Quartal', label: '028-mMaj7add4',
+    intervals: [0, 3, 5, 11],
+    modes: [{ label: '1-♭3-4-7' }, { label: '1-2-♭6-6' }, { label: '1-♭5-5-♭7' }, { label: '1-♭2-3-♭5' }],
+  },
+  {
+    key: 'tetra_7s9', noteCount: 'tetra', group: 'Quartal', label: '029-7♯9',
+    intervals: [0, 3, 4, 10],
+    modes: [{ label: '1-♯2-3-♭7' }, { label: '1-♭2-5-6' }, { label: '1-♭5-♭6-7' }, { label: '1-2-4-♭5' }],
+  },
+  {
+    key: 'tetra_maj7susb5', noteCount: 'tetra', group: 'Quartal', label: '030-Maj7sus♭5',
+    intervals: [0, 5, 6, 11],
+    modes: [{ label: '1-4-♭5-7' }, { label: '1-♭2-♭5-5' }], // symmetric: only 2 distinct
+  },
+  {
+    key: 'tetra_maj7s11', noteCount: 'tetra', group: 'Quartal', label: '031-Maj7♯11',
+    intervals: [0, 4, 6, 11],
+    modes: [{ label: '1-3-♯4-7' }, { label: '1-2-5-♭6' }, { label: '1-4-♭5-♭7' }, { label: '1-♭2-4-5' }],
+  },
+  {
+    key: 'tetra_dom11', noteCount: 'tetra', group: 'Quartal', label: '032-Dom11',
+    intervals: [0, 4, 5, 10],
+    modes: [{ label: '1-3-4-♭7' }, { label: '1-♭2-♭5-♭6' }, { label: '1-4-5-7' }, { label: '1-2-♭5-5' }],
+  },
+  {
+    key: 'tetra_m11', noteCount: 'tetra', group: 'Quartal', label: '033-m11',
+    intervals: [0, 3, 5, 10],
+    modes: [{ label: '1-♭3-4-♭7' }, { label: '1-2-5-6' }, { label: '1-4-5-♭7' }, { label: '1-2-4-5' }],
+  },
+  {
+    key: 'tetra_dom7s11', noteCount: 'tetra', group: 'Quartal', label: '034-Dom7♯11',
+    intervals: [0, 4, 6, 10],
+    modes: [{ label: '1-3-♯4-♭7' }, { label: '1-2-♭5-♭6' }], // symmetric: only 2 distinct
+  },
+  {
+    key: 'tetra_maj7', noteCount: 'tetra', group: '7th', label: '035-Maj7',
     intervals: [0, 4, 7, 11],
     modes: [{ label: '1-3-5-7' }, { label: '1-♭3-5-♭6' }, { label: '1-3-4-6' }, { label: '1-♭2-4-♭6' }],
   },
   {
-    key: 'tetra_maj7s5', noteCount: 'tetra', label: '036-Maj7(♯5)',
+    key: 'tetra_maj7s5', noteCount: 'tetra', group: '7th', label: '036-Maj7(♯5)',
     intervals: [0, 4, 8, 11],
     modes: [{ label: '1-3-♯5-7' }, { label: '1-3-5-♭6' }, { label: '1-♭3-♭4-♭6' }, { label: '1-♭2-4-6' }],
   },
   {
-    key: 'tetra_dom7', noteCount: 'tetra', label: '037-Dom7',
+    key: 'tetra_dom7', noteCount: 'tetra', group: '7th', label: '037-Dom7',
     intervals: [0, 4, 7, 10],
     modes: [{ label: '1-3-5-♭7' }, { label: '1-♭3-♭5-♭6' }, { label: '1-♭3-4-6' }, { label: '1-2-♭5-6' }],
   },
   {
-    key: 'tetra_dom7s5', noteCount: 'tetra', label: '038-Dom7♯5',
+    key: 'tetra_dom7s5', noteCount: 'tetra', group: '7th', label: '038-Dom7♯5',
     intervals: [0, 4, 8, 10],
     modes: [{ label: '1-3-♯5-♭7' }, { label: '1-3-♯4-♯5' }, { label: '1-2-3-♯5' }, { label: '1-2-♯4-♭7' }],
   },
   {
-    key: 'tetra_min7', noteCount: 'tetra', label: '039-Minor7',
+    key: 'tetra_min7', noteCount: 'tetra', group: '7th', label: '039-Minor7',
     intervals: [0, 3, 7, 10],
     modes: [{ label: '1-♭3-5-♭7' }, { label: '1-3-5-6' }, { label: '1-♭3-4-♭6' }, { label: '1-2-4-6' }],
   },
   {
-    key: 'tetra_mmaj7', noteCount: 'tetra', label: '040-mMaj7',
+    key: 'tetra_mmaj7', noteCount: 'tetra', group: '7th', label: '040-mMaj7',
     intervals: [0, 3, 7, 11],
     modes: [{ label: '1-♭3-5-7' }, { label: '1-3-♯5-6' }, { label: '1-3-4-♯5' }, { label: '1-♭2-3-♭6' }],
   },
   {
-    key: 'tetra_m7b5', noteCount: 'tetra', label: '041-m7(♭5)',
+    key: 'tetra_m7b5', noteCount: 'tetra', group: '7th', label: '041-m7(♭5)',
     intervals: [0, 3, 6, 10],
     modes: [{ label: '1-♭3-♭5-♭7' }, { label: '1-♭3-5-6' }, { label: '1-3-♭5-6' }, { label: '1-2-4-♭6' }],
   },
   {
-    key: 'tetra_dim7', noteCount: 'tetra', label: '042-Dim7',
+    key: 'tetra_dim7', noteCount: 'tetra', group: '7th', label: '042-Dim7',
     intervals: [0, 3, 6, 9],
     modes: [{ label: '1-♭3-♭5-6' }], // all inversions identical due to symmetry
   },
   {
-    key: 'tetra_dimmaj7', noteCount: 'tetra', label: '043-DimMaj7',
+    key: 'tetra_dimmaj7', noteCount: 'tetra', group: '7th', label: '043-DimMaj7',
     intervals: [0, 3, 6, 11],
     modes: [{ label: '1-♭3-♭5-7' }, { label: '1-♭3-♭6-°7' }, { label: '1-4-♭5-6' }, { label: '1-♭2-3-5' }],
   },
@@ -357,13 +397,21 @@ function populateCollectionSelect() {
   const noteCountKey = document.getElementById('note-count').value;
   const sel = document.getElementById('collection');
   sel.innerHTML = '';
+  let currentGroup = null;
+  let groupEl = null;
   COLLECTIONS
     .filter(c => c.noteCount === noteCountKey)
     .forEach(c => {
+      if (c.group && c.group !== currentGroup) {
+        currentGroup = c.group;
+        groupEl = document.createElement('optgroup');
+        groupEl.label = currentGroup;
+        sel.appendChild(groupEl);
+      }
       const opt = document.createElement('option');
       opt.value = c.key;
       opt.textContent = c.label;
-      sel.appendChild(opt);
+      (c.group ? groupEl : sel).appendChild(opt);
     });
   populateModeSelect();
 }
